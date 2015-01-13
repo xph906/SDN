@@ -243,6 +243,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 			}
 
 			/* Drop packets that we will send to NW */
+            /*
 			byte[] src_tmp = IPv4.toIPv4AddressBytes(conn.srcIP);
 			byte[] dst_tmp = IPv4.toIPv4AddressBytes(conn.dstIP);
 			if((src_tmp[0]==(byte)130) && (src_tmp[1]==(byte)107) && (src_tmp[2]>=(byte)240)){
@@ -253,6 +254,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 				System.err.println("Drop packet as it's for NW: " + conn + " INPORT:"+((OFPacketIn)msg).getInPort());
 				return Command.CONTINUE;
 			}
+            */
 			
 			HoneyPot pot = getHoneypotFromConnection(conn);
 			if(pot == null){
