@@ -1028,7 +1028,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
             int packet_len = packetData.length;
             int msg_len = pktInMsg.getLength();
             IPacket pkt = eth.getPayload();
-            int checksum_index = 14+10;
+            int checksum_index = 10;
             
             if(pkt instanceof IPv4){
             	IPv4 ip_pkt = (IPv4)pkt;
@@ -1044,7 +1044,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
             	short new_checksum = ChecksumCalc.calculateIPChecksum(newPacketData);
             	
             	System.err.println("EthernetPayload:"+bytesToHexString(packetData));
-            	System.err.println("New IP Payload:"+bytesToHexString(packetData));
+            	System.err.println("New IP Payload:"+bytesToHexString(newPacketData));
             	System.err.println("Checksum:"+shortToHexString(checksum)+" newChecksum"+shortToHexString(new_checksum)+" SourceIP:"+Integer.toHexString(src_ip));
             	//System.err.println("Payload: "+fromBytesToString());
             	//IPv4.
