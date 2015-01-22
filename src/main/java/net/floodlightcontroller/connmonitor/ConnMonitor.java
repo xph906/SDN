@@ -1016,10 +1016,12 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
             	IPv4 ip_pkt = (IPv4)pkt;
             	int ip_len = ip_pkt.getTotalLength();
             	System.err.println("msglen:"+msg_len+" packetlen:"+packet_len+" iplen:"+ip_len);
-            	
             }
-            System.err.println("msglen:"+msg_len+" packetlen:"+packet_len+" iplen: no ipv4 pkt");
-            
+            else{
+            	short eth_type = eth.getEtherType();
+            	String eth_type_str = Integer.toHexString(eth_type & 0xffff);
+            	System.err.println("msglen:"+msg_len+" packetlen:"+packet_len+" iplen: no ipv4 pkt :"+eth_type_str);
+            }
             pktOut.setPacketData(packetData);
         }
         else 
