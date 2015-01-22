@@ -1035,7 +1035,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
             	int ip_len = ip_pkt.getTotalLength();
             	int header_len = ip_pkt.getHeaderLength() & 0x000000ff;
             	
-            	System.err.println("msglen:"+msg_len+" packetlen:"+packet_len+" iplen:"+ip_len);
+            	System.err.println("msglen:"+msg_len+" packetlen:"+packet_len+" iplen:"+ip_len+" ip headerlen:"+header_len);
             	short checksum = ip_pkt.getChecksum();
             	int src_ip = ip_pkt.getSourceAddress();
             	byte[] newPacketData = Arrays.copyOfRange(packetData,14,14+header_len);
