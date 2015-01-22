@@ -1022,12 +1022,13 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
             byte[] packetData = pktInMsg.getPacketData();
             pktOut.setLength((short)(OFPacketOut.MINIMUM_LENGTH
                     + pktOut.getActionsLength() + packetData.length));
+            
+            //===========TEST====================
             int packet_len = packetData.length;
             int msg_len = pktInMsg.getLength();
             IPacket pkt = eth.getPayload();
+            int checksum_index = 14+10;
             
-            
-    		
             if(pkt instanceof IPv4){
             	IPv4 ip_pkt = (IPv4)pkt;
             	int ip_len = ip_pkt.getTotalLength();
@@ -1035,15 +1036,22 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
             	System.err.println("msglen:"+msg_len+" packetlen:"+packet_len+" iplen:"+ip_len);
             	short checksum = ip_pkt.getChecksum();
             	int src_ip = ip_pkt.getSourceAddress();
+            	packetData[checksum_index] = 0x00;
+            	packetData[checksum_index+1] = 0x00;
+            	short new_checksum = ChecksumCalc.calculateIPChecksum(packetData);
+            	
             	System.err.println("EthernetPayload:"+bytesToHexString(packetData));
-            	System.err.println("Checksum:"+shortToHexString(checksum)+" SourceIP:"+Integer.toHexString(src_ip));
+            	System.err.println("Checksum:"+shortToHexString(checksum)+" newChecksum"+shortToHexString(new_checksum)+" SourceIP:"+Integer.toHexString(src_ip));
             	//System.err.println("Payload: "+fromBytesToString());
+            	//IPv4.
             }
             else{
             	short eth_type = eth.getEtherType();
             	String eth_type_str = Integer.toHexString(eth_type & 0xffff);
             	System.err.println("msglen:"+msg_len+" packetlen:"+packet_len+" iplen: no ipv4 pkt :"+eth_type_str);
             }
+            //===========TEST======================
+            
             pktOut.setPacketData(packetData);
         }
         else 
