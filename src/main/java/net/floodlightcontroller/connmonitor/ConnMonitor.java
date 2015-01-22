@@ -255,7 +255,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 			}
 			
 			if(processedByOtherHoneynets(conn, ((OFPacketIn)msg).getInPort(), sw.getId()) ){
-				forwardPacket(sw,(OFPacketIn)msg, nc_mac_address,nw_ip_address,null,((OFPacketIn)msg).getInPort(), eth);
+				forwardPacket(sw,(OFPacketIn)msg, nc_mac_address,nw_ip_address,IPv4.toIPv4AddressBytes(conn.getDstIP()),((OFPacketIn)msg).getInPort(), eth);
 				return Command.CONTINUE;
 			}
 			
@@ -1028,6 +1028,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
                     + pktOut.getActionsLength() + packetData.length));
             
             //===========TEST====================
+            /*
             int packet_len = packetData.length;
             int msg_len = pktInMsg.getLength();
             IPacket pkt = eth.getPayload();
@@ -1040,7 +1041,6 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
             	System.err.println("msglen:"+msg_len+" packetlen:"+packet_len+" iplen:"+ip_len+" ip headerlen:"+ip_header_len);
             	short checksum = ip_pkt.getChecksum();
             	int src_ip = ip_pkt.getSourceAddress();
-            	//byte[] eth_header_data = Arrays.copyOfRange(packetData, 0, ChecksumCalc.ETHERNET_HEADER_LEN);
             	byte[] ip_pkt_data = Arrays.copyOfRange(packetData,
             				ChecksumCalc.ETHERNET_HEADER_LEN,ChecksumCalc.ETHERNET_HEADER_LEN + ip_len);
             	
@@ -1082,9 +1082,11 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
             	System.err.println("msglen:"+msg_len+" packetlen:"+packet_len+" iplen: no ipv4 pkt :"+eth_type_str);
             	pktOut.setPacketData(packetData);
             }
+            
+            */
             //===========TEST======================
             
-            //pktOut.setPacketData(packetData);
+            pktOut.setPacketData(packetData);
         }
         else 
         {
