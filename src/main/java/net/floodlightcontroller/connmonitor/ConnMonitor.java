@@ -212,9 +212,11 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 	                IFloodlightProviderService.bcStore.get(cntx,
 	                                            IFloodlightProviderService.CONTEXT_PI_PAYLOAD);
 			Connection conn = new Connection(eth);
-			OFPacketIn packetInMsg = (OFPacketIn)msg;
-			int bufferId = packetInMsg.getBufferId();
-			System.err.println("buffer id:"+bufferId);
+			OFPacketIn packet_in_msg = (OFPacketIn)msg;
+			boolean no_buffer_id = false;
+			if (packet_in_msg.getBufferId() == 0xffffffff){
+				no_buffer_id = true;
+			}
 			
 			/* For statistics */
 			if((conn.getType()==Connection.INTERNAL_TO_EXTERNAL) && 
@@ -1003,6 +1005,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
         // Set data if it is included in the packet in but buffer id is NONE
         if (pktOut.getBufferId() == OFPacketOut.BUFFER_ID_NONE) 
         {
+        	System.err.println("debug BUFFER_ID_NONE");
             byte[] packetData = pktInMsg.getPacketData();
             pktOut.setLength((short)(OFPacketOut.MINIMUM_LENGTH
                     + pktOut.getActionsLength() + packetData.length));
@@ -1010,6 +1013,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
         }
         else 
         {
+        	System.err.println("debug NOT BUFFER_ID_NONE");
         	pktOut.setLength((short)(OFPacketOut.MINIMUM_LENGTH
                     + pktOut.getActionsLength()));
         }
