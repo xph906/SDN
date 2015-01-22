@@ -728,7 +728,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 		byte[] dst_tmp = IPv4.toIPv4AddressBytes(conn.dstIP);
 		if( (src_tmp[0]==(byte)129) && (src_tmp[1]==(byte)105) && (src_tmp[2]==(byte)44) && (src_tmp[3]==(byte)107) ){
 			System.err.println("Packages sent from NW: "+conn );
-			
+		    return true;	
 		}
 		else if((dst_tmp[0]==(byte)130) && (dst_tmp[1]==(byte)107) && (dst_tmp[2]>=(byte)240)){
 			byte[] newDstMAC = null;
@@ -777,6 +777,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 			if (rs == false){
 				System.err.println("Fail setting ruls for sending traffic to NW");
 			}
+            return true;
 		}
 		
 		return false;
