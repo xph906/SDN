@@ -1001,7 +1001,8 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 		pktOut.setActions(actions);
 
 		pktOut.setActionsLength((short)actionLen);
-	        
+	    
+		
         // Set data if it is included in the packet in but buffer id is NONE
         if (pktOut.getBufferId() == OFPacketOut.BUFFER_ID_NONE) 
         {
@@ -1012,10 +1013,18 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
             int packet_len = packetData.length;
             int msg_len = pktInMsg.getLength();
             IPacket pkt = eth.getPayload();
+            
+            StringBuilder hexpayload = new StringBuilder();
+    		for (byte b:packetData) {
+    			hexpayload.append(String.format("%02X ", b));
+    		}
+    		
             if(pkt instanceof IPv4){
             	IPv4 ip_pkt = (IPv4)pkt;
             	int ip_len = ip_pkt.getTotalLength();
+            	
             	System.err.println("msglen:"+msg_len+" packetlen:"+packet_len+" iplen:"+ip_len);
+            	System.err.println("Payload: "+hexpayload.toString());
             }
             else{
             	short eth_type = eth.getEtherType();
