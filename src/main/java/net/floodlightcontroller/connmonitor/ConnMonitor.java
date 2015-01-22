@@ -1055,7 +1055,10 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
             		new_ether_data[i] = packetData[i];
             	for(int i=ChecksumCalc.ETHERNET_HEADER_LEN,j=0; i<packet_len; i++,j++){
             		//System.err.println("new_ether_len "+new_ether_data.length+" ip_pkt_data:"+ip_pkt_data.length+" i:"+i+" j:"+j);
-            		new_ether_data[i] = ip_pkt_data[j];
+            		if(j < ip_pkt_data.length)
+            			new_ether_data[i] = ip_pkt_data[j];
+            		else
+            			new_ether_data[i] = 0x00;
             	}
             	
             	
