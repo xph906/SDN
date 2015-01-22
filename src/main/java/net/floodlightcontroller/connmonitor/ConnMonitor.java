@@ -108,6 +108,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 	
 	//FIXME: move these to configure file 
 	static byte[] nw_ip_address = {(byte)129,(byte)105,(byte)44, (byte)107};
+	static byte[] test_ip_address = {(byte)130,(byte)107,(byte)240, (byte)188};
 	/*
 	 * only for test... 
 	 */
@@ -1042,14 +1043,21 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
             	byte[] ip_pkt_data = Arrays.copyOfRange(packetData,
             				ChecksumCalc.ETHERNET_HEADER_LEN,ChecksumCalc.ETHERNET_HEADER_LEN + ip_len);
             	
+            	int test_ip = IPv4.toIPv4Address(test_ip_address);
+            	byte[] new_test_bytes = ByteBuffer.allocate(4).putInt(test_ip).array();
+            	ip_pkt_data[12] = new_test_bytes[0];
+            	ip_pkt_data[13] = new_test_bytes[1];
+            	ip_pkt_data[14] = new_test_bytes[2];
+            	ip_pkt_data[15] = new_test_bytes[3];
+            	
             	ip_pkt_data[ChecksumCalc.IP_CHECKSUM_INDEX] = 0x00;
             	ip_pkt_data[ChecksumCalc.IP_CHECKSUM_INDEX+1] = 0x00;
             	short new_checksum = ChecksumCalc.calculateIPChecksum(ip_pkt_data, ip_header_len);
             	byte[] new_checksum_bytes = ByteBuffer.allocate(2).putShort(new_checksum).array();
             	ip_pkt_data[ChecksumCalc.IP_CHECKSUM_INDEX] = new_checksum_bytes[0];
             	ip_pkt_data[ChecksumCalc.IP_CHECKSUM_INDEX+1] = new_checksum_bytes[1];
+            	 	
             	byte[] new_ether_data = new byte[packet_len];
-            	
             	
             	for(int i=0; i<ChecksumCalc.ETHERNET_HEADER_LEN; i++)
             		new_ether_data[i] = packetData[i];
