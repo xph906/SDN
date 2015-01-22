@@ -11,6 +11,7 @@ import java.net.URL;
 import java.nio.ByteBuffer;
 import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
@@ -1036,11 +1037,14 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
             	System.err.println("msglen:"+msg_len+" packetlen:"+packet_len+" iplen:"+ip_len);
             	short checksum = ip_pkt.getChecksum();
             	int src_ip = ip_pkt.getSourceAddress();
-            	packetData[checksum_index] = 0x00;
-            	packetData[checksum_index+1] = 0x00;
-            	short new_checksum = ChecksumCalc.calculateIPChecksum(packetData);
+            	byte[] newPacketData = Arrays.copyOfRange(packetData,14,packet_len);
+            	
+            	newPacketData[checksum_index] = 0x00;
+            	newPacketData[checksum_index+1] = 0x00;
+            	short new_checksum = ChecksumCalc.calculateIPChecksum(newPacketData);
             	
             	System.err.println("EthernetPayload:"+bytesToHexString(packetData));
+            	System.err.println("New IP Payload:"+bytesToHexString(packetData));
             	System.err.println("Checksum:"+shortToHexString(checksum)+" newChecksum"+shortToHexString(new_checksum)+" SourceIP:"+Integer.toHexString(src_ip));
             	//System.err.println("Payload: "+fromBytesToString());
             	//IPv4.
