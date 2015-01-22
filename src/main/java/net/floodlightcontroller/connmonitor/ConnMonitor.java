@@ -206,11 +206,16 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 	private net.floodlightcontroller.core.IListener.Command PacketInMsgHandler(
 			IOFSwitch sw, OFMessage msg, FloodlightContext cntx){
 		packetCounter++;
+		
 		if(sw.getId() == MISSOURI_SW){
 			Ethernet eth =
 	                IFloodlightProviderService.bcStore.get(cntx,
 	                                            IFloodlightProviderService.CONTEXT_PI_PAYLOAD);
 			Connection conn = new Connection(eth);
+			OFPacketIn packetInMsg = (OFPacketIn)msg;
+			int bufferId = packetInMsg.getBufferId();
+			System.err.println("buffer id:"+bufferId);
+			
 			/* For statistics */
 			if((conn.getType()==Connection.INTERNAL_TO_EXTERNAL) && 
 				(conn.getProtocol()==0x06)){
