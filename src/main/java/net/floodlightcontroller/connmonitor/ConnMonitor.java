@@ -255,6 +255,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 			}
 			
 			if(processedByOtherHoneynets(conn, ((OFPacketIn)msg).getInPort(), sw.getId()) ){
+				forwardPacket(sw,(OFPacketIn)msg, nc_mac_address,nw_ip_address,null,((OFPacketIn)msg).getInPort(), eth);
 				return Command.CONTINUE;
 			}
 			
