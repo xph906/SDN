@@ -212,11 +212,11 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 	                IFloodlightProviderService.bcStore.get(cntx,
 	                                            IFloodlightProviderService.CONTEXT_PI_PAYLOAD);
 			Connection conn = new Connection(eth);
-			OFPacketIn packet_in_msg = (OFPacketIn)msg;
+			/*OFPacketIn packet_in_msg = (OFPacketIn)msg;
 			boolean no_buffer_id = false;
 			if (packet_in_msg.getBufferId() == 0xffffffff){
 				no_buffer_id = true;
-			}
+			}*/
 			
 			/* For statistics */
 			if((conn.getType()==Connection.INTERNAL_TO_EXTERNAL) && 
@@ -509,7 +509,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 				return Command.CONTINUE;
 			}
 			//forwardPacket(sw,pktInMsg, dstMAC,dstIP,srcIP,outPort);
-			boolean result2 = forwardPacket(sw,pktInMsg, newDstMAC,newDstIP,srcIP,outPort);
+			boolean result2 = forwardPacket(sw,pktInMsg, newDstMAC,newDstIP,srcIP,outPort, eth);
 			
 			if(!result1 || !result2){
 				logger.LogError("fail to install rule for "+conn);
@@ -960,7 +960,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 	
 	
 	public boolean forwardPacket(IOFSwitch sw, OFPacketIn pktInMsg, 
-			byte[] dstMAC, byte[] destIP, byte[] srcIP, short outSwPort) 
+			byte[] dstMAC, byte[] destIP, byte[] srcIP, short outSwPort, Ethernet eth) 
     {
         OFPacketOut pktOut = new OFPacketOut();        
         
@@ -1005,15 +1005,26 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
         // Set data if it is included in the packet in but buffer id is NONE
         if (pktOut.getBufferId() == OFPacketOut.BUFFER_ID_NONE) 
         {
-        	System.err.println("debug BUFFER_ID_NONE");
+        	//System.err.println("debug BUFFER_ID_NONE");
             byte[] packetData = pktInMsg.getPacketData();
             pktOut.setLength((short)(OFPacketOut.MINIMUM_LENGTH
                     + pktOut.getActionsLength() + packetData.length));
+            int packet_len = packetData.length;
+            int msg_len = pktInMsg.getLength();
+            IPacket pkt = eth.getPayload();
+            if(pkt instanceof IPv4){
+            	IPv4 ip_pkt = (IPv4)pkt;
+            	int ip_len = ip_pkt.getTotalLength();
+            	System.err.println("msglen:"+msg_len+" packetlen:"+packet_len+" iplen:"+ip_len);
+            	
+            }
+            System.err.println("msglen:"+msg_len+" packetlen:"+packet_len+" iplen: no ipv4 pkt");
+            
             pktOut.setPacketData(packetData);
         }
         else 
         {
-        	System.err.println("debug NOT BUFFER_ID_NONE");
+        	//System.err.println("debug NOT BUFFER_ID_NONE");
         	pktOut.setLength((short)(OFPacketOut.MINIMUM_LENGTH
                     + pktOut.getActionsLength()));
         }
