@@ -3,6 +3,7 @@ package net.floodlightcontroller.connmonitor;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
+import java.lang.reflect.Array;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
@@ -1028,24 +1029,33 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
             int packet_len = packetData.length;
             int msg_len = pktInMsg.getLength();
             IPacket pkt = eth.getPayload();
-            int checksum_index = 10;
             
             if(pkt instanceof IPv4){
             	IPv4 ip_pkt = (IPv4)pkt;
             	int ip_len = ip_pkt.getTotalLength();
-            	int header_len = (ip_pkt.getHeaderLength() & 0x000000ff) * 4;
+            	int ip_header_len = (ip_pkt.getHeaderLength() & 0x000000ff) * 4;
             	
-            	System.err.println("msglen:"+msg_len+" packetlen:"+packet_len+" iplen:"+ip_len+" ip headerlen:"+header_len);
+            	System.err.println("msglen:"+msg_len+" packetlen:"+packet_len+" iplen:"+ip_len+" ip headerlen:"+ip_header_len);
             	short checksum = ip_pkt.getChecksum();
             	int src_ip = ip_pkt.getSourceAddress();
-            	byte[] newPacketData = Arrays.copyOfRange(packetData,14,14+header_len);
+            	//byte[] eth_header_data = Arrays.copyOfRange(packetData, 0, ChecksumCalc.ETHERNET_HEADER_LEN);
+            	byte[] ip_pkt_data = Arrays.copyOfRange(packetData,
+            				ChecksumCalc.ETHERNET_HEADER_LEN,ChecksumCalc.ETHERNET_HEADER_LEN + ip_len);
             	
-            	newPacketData[checksum_index] = 0x00;
-            	newPacketData[checksum_index+1] = 0x00;
-            	short new_checksum = ChecksumCalc.calculateIPChecksum(newPacketData);
+            	ip_pkt_data[ChecksumCalc.IP_CHECKSUM_INDEX] = 0x00;
+            	ip_pkt_data[ChecksumCalc.IP_CHECKSUM_INDEX+1] = 0x00;
+            	short new_checksum = ChecksumCalc.calculateIPChecksum(ip_pkt_data, ip_header_len);
+            	byte[] new_checksum_bytes = ByteBuffer.allocate(2).putShort(new_checksum).array();
+            	ip_pkt_data[ChecksumCalc.IP_CHECKSUM_INDEX] = new_checksum_bytes[0];
+            	ip_pkt_data[ChecksumCalc.IP_CHECKSUM_INDEX+1] = new_checksum_bytes[1];
+            	byte[] new_ether_data = (byte[])Array.newInstance(Byte.class, packet_len);
+            	for(int i=0; i<ChecksumCalc.ETHERNET_HEADER_LEN; i++)
+            		new_ether_data[i] = packetData[i];
+            	for(int i=ChecksumCalc.ETHERNET_HEADER_LEN,j=0; i<packet_len; i++,j++)
+            		new_ether_data[i] = ip_pkt_data[j];
             	
             	System.err.println("EthernetPayload:"+bytesToHexString(packetData));
-            	System.err.println("New IP Payload:"+bytesToHexString(newPacketData));
+            	System.err.println("New IP  Payload:"+bytesToHexString(new_ether_data));
             	System.err.println("Checksum:"+shortToHexString(checksum)+" newChecksum"+shortToHexString(new_checksum)+" SourceIP:"+Integer.toHexString(src_ip));
             	//System.err.println("Payload: "+fromBytesToString());
             	//IPv4.

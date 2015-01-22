@@ -1,6 +1,8 @@
 package net.floodlightcontroller.connmonitor;
 
 public class ChecksumCalc {
+	 public static final short ETHERNET_HEADER_LEN = 14;
+	 public static final short IP_CHECKSUM_INDEX = 10;
 	/**
 	 * Calculate the Internet Checksum of a buffer (RFC 1071 -
 	 * http://www.faqs.org/rfcs/rfc1071.html) Algorithm is 1) apply a 16-bit 1's
@@ -15,8 +17,12 @@ public class ChecksumCalc {
 	 *            The message
 	 * @return The checksum
 	 */
-	static public short calculateIPChecksum(byte[] buf) {
-		int length = buf.length;
+	static public short calculateIPChecksum(byte[] buf, int length) {
+		if(length == 0)
+			length = buf.length;	
+		else if(length > buf.length)
+			return 0;
+		
 		int i = 0;
 
 		long sum = 0;
