@@ -958,6 +958,18 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 		return true;
 	}
 	
+	static public String bytesToHexString(byte[] contents){
+		StringBuilder hexcontents = new StringBuilder();
+		for (byte b:contents) {
+			hexcontents.append(String.format("%02X ", b));
+		}
+		return hexcontents.toString();
+	}
+	
+	static public String shortToHexString(short content){
+		String str = Integer.toHexString(content & 0xffff);
+		return str;
+	}
 	
 	public boolean forwardPacket(IOFSwitch sw, OFPacketIn pktInMsg, 
 			byte[] dstMAC, byte[] destIP, byte[] srcIP, short outSwPort, Ethernet eth) 
@@ -1014,17 +1026,18 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
             int msg_len = pktInMsg.getLength();
             IPacket pkt = eth.getPayload();
             
-            StringBuilder hexpayload = new StringBuilder();
-    		for (byte b:packetData) {
-    			hexpayload.append(String.format("%02X ", b));
-    		}
+            
     		
             if(pkt instanceof IPv4){
             	IPv4 ip_pkt = (IPv4)pkt;
             	int ip_len = ip_pkt.getTotalLength();
             	
             	System.err.println("msglen:"+msg_len+" packetlen:"+packet_len+" iplen:"+ip_len);
-            	System.err.println("Payload: "+hexpayload.toString());
+            	short checksum = ip_pkt.getChecksum();
+            	int src_ip = ip_pkt.getSourceAddress();
+            	System.err.println("EthernetPayload:"+bytesToHexString(packetData));
+            	System.err.println("Checksum:"+shortToHexString(checksum)+" SourceIP:"+Integer.toHexString(src_ip));
+            	//System.err.println("Payload: "+fromBytesToString());
             }
             else{
             	short eth_type = eth.getEtherType();
