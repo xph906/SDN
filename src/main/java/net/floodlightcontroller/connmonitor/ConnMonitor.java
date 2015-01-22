@@ -35,7 +35,9 @@ import org.openflow.protocol.OFMessage;
 import org.openflow.protocol.OFPacketIn;
 import org.openflow.protocol.OFPacketOut;
 import org.openflow.protocol.OFPort;
+import org.openflow.protocol.OFSetConfig;
 import org.openflow.protocol.OFStatisticsRequest;
+import org.openflow.protocol.OFSwitchConfig.OFConfigFlags;
 import org.openflow.protocol.OFType;
 import org.openflow.protocol.Wildcards;
 import org.openflow.protocol.action.OFAction;
@@ -720,7 +722,23 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 		
 		match = new OFMatch();
 		match.setWildcards(OFMatch.OFPFW_ALL); 
-		return installDropRule(sw.getId(),match,(short)0,(short)0,DROP_PRIORITY);
+		result = installDropRule(sw.getId(),match,(short)0,(short)0,DROP_PRIORITY);
+		
+		/***Configure Switch to send whole package to Controller***/
+		OFSetConfig config = new OFSetConfig();
+		config.setMissSendLength((short)0xffff);
+		try{
+			sw.write(config, null);
+			sw.flush();
+			System.out.println("Done writing config to sw");
+		}
+		catch(Exception e){
+			System.err.println("Write config to sw: "+e);
+		}
+		
+		
+		
+		return result;
 	}
 	private boolean processedByOtherHoneynets(Connection conn, short inport, long switch_id){
 		/*modify this part*/
