@@ -1050,7 +1050,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
             	ip_pkt_data[ChecksumCalc.IP_CHECKSUM_INDEX+1] = new_checksum_bytes[1];
             	byte[] new_ether_data = new byte[packet_len];
             	
-            	System.err.println("EthernetPayload:"+bytesToHexString(packetData));
+            	
             	for(int i=0; i<ChecksumCalc.ETHERNET_HEADER_LEN; i++)
             		new_ether_data[i] = packetData[i];
             	for(int i=ChecksumCalc.ETHERNET_HEADER_LEN,j=0; i<packet_len; i++,j++){
@@ -1061,20 +1061,21 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
             			new_ether_data[i] = 0x00;
             	}
             	
-            	
+            	System.err.println("EthernetPayload:"+bytesToHexString(packetData));
             	System.err.println("New IP  Payload:"+bytesToHexString(new_ether_data));
             	System.err.println("Checksum:"+shortToHexString(checksum)+" newChecksum"+shortToHexString(new_checksum)+" SourceIP:"+Integer.toHexString(src_ip));
-            	//System.err.println("Payload: "+fromBytesToString());
-            	//IPv4.
+            	
+            	pktOut.setPacketData(new_ether_data);
             }
             else{
             	short eth_type = eth.getEtherType();
             	String eth_type_str = Integer.toHexString(eth_type & 0xffff);
             	System.err.println("msglen:"+msg_len+" packetlen:"+packet_len+" iplen: no ipv4 pkt :"+eth_type_str);
+            	pktOut.setPacketData(packetData);
             }
             //===========TEST======================
             
-            pktOut.setPacketData(packetData);
+            //pktOut.setPacketData(packetData);
         }
         else 
         {
