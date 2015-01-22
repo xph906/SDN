@@ -1033,7 +1033,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
             if(pkt instanceof IPv4){
             	IPv4 ip_pkt = (IPv4)pkt;
             	int ip_len = ip_pkt.getTotalLength();
-            	int header_len = ip_pkt.getHeaderLength() & 0x000000ff;
+            	int header_len = (ip_pkt.getHeaderLength() & 0x000000ff) * 4;
             	
             	System.err.println("msglen:"+msg_len+" packetlen:"+packet_len+" iplen:"+ip_len+" ip headerlen:"+header_len);
             	short checksum = ip_pkt.getChecksum();
