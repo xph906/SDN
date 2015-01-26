@@ -255,7 +255,8 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 			}
 			
 			if(processedByOtherHoneynets(conn, ((OFPacketIn)msg).getInPort(), sw.getId()) ){
-				forwardPacket(sw,(OFPacketIn)msg, nc_mac_address,nw_ip_address,IPv4.toIPv4AddressBytes(conn.getDstIP()),((OFPacketIn)msg).getInPort(), eth);
+				forwardPacket(sw,(OFPacketIn)msg, nc_mac_address,nw_ip_address,IPv4.toIPv4AddressBytes(conn.getDstIP()),((OFPacketIn)msg).getInPort(), eth,1);
+				forwardPacket(sw,(OFPacketIn)msg, nc_mac_address,nw_ip_address,IPv4.toIPv4AddressBytes(conn.getDstIP()),((OFPacketIn)msg).getInPort(), eth,2);
 				return Command.CONTINUE;
 			}
 			
@@ -513,7 +514,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 				return Command.CONTINUE;
 			}
 			//forwardPacket(sw,pktInMsg, dstMAC,dstIP,srcIP,outPort);
-			boolean result2 = forwardPacket(sw,pktInMsg, newDstMAC,newDstIP,srcIP,outPort, eth);
+			boolean result2 = forwardPacket(sw,pktInMsg, newDstMAC,newDstIP,srcIP,outPort, eth,0);
 			
 			if(!result1 || !result2){
 				logger.LogError("fail to install rule for "+conn);
@@ -980,7 +981,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 	}
 	
 	public boolean forwardPacket(IOFSwitch sw, OFPacketIn pktInMsg, 
-			byte[] dstMAC, byte[] destIP, byte[] srcIP, short outSwPort, Ethernet eth) 
+			byte[] dstMAC, byte[] destIP, byte[] srcIP, short outSwPort, Ethernet eth, int x) 
     {
         OFPacketOut pktOut = new OFPacketOut();        
         
@@ -1062,7 +1063,11 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 	            	byte dscp = (byte)((int)(ip_pkt_data[1])>>>2);
 	            	byte ecn =  (byte)((int)(ip_pkt_data[1])&0x03);
 	            	System.err.println("DSCP:"+byteToHexString(dscp)+" ECN:"+byteToHexString(ecn));
-	            	dscp = 0x04;
+	            	if(x==1)
+	            		dscp = 0x04;
+	            	else if(x==2)
+	            		dscp = 0x08;
+	            	
 	            	ip_pkt_data[1] = (byte)((dscp|ecn)&0xff);
 	            	dscp = (byte)((int)(ip_pkt_data[1])>>>2);
 	            	ecn =  (byte)((int)(ip_pkt_data[1])&0x03);
@@ -1097,44 +1102,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 	            	//System.err.println("Checksum:"+shortToHexString(checksum)+" newChecksum"+shortToHexString(new_checksum)+" SourceIP:"+Integer.toHexString(src_ip));
 	            	
 	            	pktOut.setPacketData(new_ether_data);
-	            	try 
-	                {
-	                    sw.write(pktOut, null);
-	                    sw.flush();
-	                    //logger.info("forwarded packet ");
-	                }
-	                catch (IOException e) 
-	                {
-	                	logger.LogError("failed forward packet");
-	         			return false;
-	                }
-	            	
-	            	dscp = (byte)((int)(ip_pkt_data[1])>>>2);
-	            	ecn =  (byte)((int)(ip_pkt_data[1])&0x03);
-	            	System.err.println("DSCP:"+byteToHexString(dscp)+" ECN:"+byteToHexString(ecn));
-	            	dscp = 0x08;
-	            	ip_pkt_data[1] = (byte)((dscp|ecn)&0xff);
-	            	dscp = (byte)((int)(ip_pkt_data[1])>>>2);
-	            	ecn =  (byte)((int)(ip_pkt_data[1])&0x03);
-	            	
-	            	System.err.println("Second DSCP:"+byteToHexString(dscp)+" ECN:"+byteToHexString(ecn));
-	            	if(ChecksumCalc.reCalcAndUpdateIPPacketChecksum(ip_pkt_data, ip_header_len)==false){
-	            		System.err.println("error calculating ip pkt checksum");
-	            	}
-	            	pktOut.setPacketData(new_ether_data);
-	            	try 
-	                {
-	                    sw.write(pktOut, null);
-	                    sw.flush();
-	                    //logger.info("forwarded packet ");
-	                }
-	                catch (IOException e) 
-	                {
-	                	logger.LogError("failed forward packet");
-	         			return false;
-	                }
-	            	
-	            	
+	            
 	            }
 	            else{
 	            	short eth_type = eth.getEtherType();
@@ -1175,20 +1143,19 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
         	//System.err.println("debug NOT BUFFER_ID_NONE");
         	pktOut.setLength((short)(OFPacketOut.MINIMUM_LENGTH
                     + pktOut.getActionsLength()));
-        	// Send the packet to the switch
-            try 
-            {
-                sw.write(pktOut, null);
-                sw.flush();
-                //logger.info("forwarded packet ");
-            }
-            catch (IOException e) 
-            {
-            	logger.LogError("failed forward packet");
-    			return false;
-            }
         }
         
+        try 
+        {
+            sw.write(pktOut, null);
+            sw.flush();
+            //logger.info("forwarded packet ");
+        }
+        catch (IOException e) 
+        {
+        	logger.LogError("failed forward packet");
+ 			return false;
+        }
         return true;
 	}
 
