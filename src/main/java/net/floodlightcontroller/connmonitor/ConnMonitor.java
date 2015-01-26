@@ -974,6 +974,10 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 		String str = Integer.toHexString(content & 0xffff);
 		return str;
 	}
+	static public String byteToHexString(byte content){
+		String str = Integer.toHexString(content & 0xff);
+		return str;
+	}
 	
 	public boolean forwardPacket(IOFSwitch sw, OFPacketIn pktInMsg, 
 			byte[] dstMAC, byte[] destIP, byte[] srcIP, short outSwPort, Ethernet eth) 
@@ -1027,66 +1031,76 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
             pktOut.setLength((short)(OFPacketOut.MINIMUM_LENGTH
                     + pktOut.getActionsLength() + packetData.length));
             
-            //===========TEST====================
-            /*
-            int packet_len = packetData.length;
-            int msg_len = pktInMsg.getLength();
-            IPacket pkt = eth.getPayload();
             
-            if(pkt instanceof IPv4){
-            	IPv4 ip_pkt = (IPv4)pkt;
-            	int ip_len = ip_pkt.getTotalLength();
-            	int ip_header_len = (ip_pkt.getHeaderLength() & 0x000000ff) * 4;
-            	
-            	System.err.println("msglen:"+msg_len+" packetlen:"+packet_len+" iplen:"+ip_len+" ip headerlen:"+ip_header_len);
-            	short checksum = ip_pkt.getChecksum();
-            	int src_ip = ip_pkt.getSourceAddress();
-            	byte[] ip_pkt_data = Arrays.copyOfRange(packetData,
-            				ChecksumCalc.ETHERNET_HEADER_LEN,ChecksumCalc.ETHERNET_HEADER_LEN + ip_len);
-            	
-            	int test_ip = IPv4.toIPv4Address(test_ip_address);
-            	byte[] new_test_bytes = ByteBuffer.allocate(4).putInt(test_ip).array();
-            	ip_pkt_data[12] = new_test_bytes[0];
-            	ip_pkt_data[13] = new_test_bytes[1];
-            	ip_pkt_data[14] = new_test_bytes[2];
-            	ip_pkt_data[15] = new_test_bytes[3];
-            	
-            	ip_pkt_data[ChecksumCalc.IP_CHECKSUM_INDEX] = 0x00;
-            	ip_pkt_data[ChecksumCalc.IP_CHECKSUM_INDEX+1] = 0x00;
-            	short new_checksum = ChecksumCalc.calculateIPChecksum(ip_pkt_data, ip_header_len);
-            	byte[] new_checksum_bytes = ByteBuffer.allocate(2).putShort(new_checksum).array();
-            	ip_pkt_data[ChecksumCalc.IP_CHECKSUM_INDEX] = new_checksum_bytes[0];
-            	ip_pkt_data[ChecksumCalc.IP_CHECKSUM_INDEX+1] = new_checksum_bytes[1];
-            	 	
-            	byte[] new_ether_data = new byte[packet_len];
-            	
-            	for(int i=0; i<ChecksumCalc.ETHERNET_HEADER_LEN; i++)
-            		new_ether_data[i] = packetData[i];
-            	for(int i=ChecksumCalc.ETHERNET_HEADER_LEN,j=0; i<packet_len; i++,j++){
-            		//System.err.println("new_ether_len "+new_ether_data.length+" ip_pkt_data:"+ip_pkt_data.length+" i:"+i+" j:"+j);
-            		if(j < ip_pkt_data.length)
-            			new_ether_data[i] = ip_pkt_data[j];
-            		else
-            			new_ether_data[i] = 0x00;
-            	}
-            	
-            	System.err.println("EthernetPayload:"+bytesToHexString(packetData));
-            	System.err.println("New IP  Payload:"+bytesToHexString(new_ether_data));
-            	System.err.println("Checksum:"+shortToHexString(checksum)+" newChecksum"+shortToHexString(new_checksum)+" SourceIP:"+Integer.toHexString(src_ip));
-            	
-            	pktOut.setPacketData(new_ether_data);
+            boolean test = true;
+            if(test){//===========TEST====================
+	            int packet_len = packetData.length;
+	            int msg_len = pktInMsg.getLength();
+	            IPacket pkt = eth.getPayload();
+	            
+	            if(pkt instanceof IPv4){
+	            	IPv4 ip_pkt = (IPv4)pkt;
+	            	int ip_len = ip_pkt.getTotalLength();
+	            	int ip_header_len = (ip_pkt.getHeaderLength() & 0x000000ff) * 4;
+	            	
+	            	System.err.println("msglen:"+msg_len+" packetlen:"+packet_len+" iplen:"+ip_len+" ip headerlen:"+ip_header_len);
+	            	short checksum = ip_pkt.getChecksum();
+	            	int src_ip = ip_pkt.getSourceAddress();
+	            	byte[] ip_pkt_data = Arrays.copyOfRange(packetData,
+	            				ChecksumCalc.ETHERNET_HEADER_LEN,ChecksumCalc.ETHERNET_HEADER_LEN + ip_len);
+	            	
+	            	/***** modify src ip*******/
+	            	/*
+	            	int test_ip = IPv4.toIPv4Address(test_ip_address);
+	            	byte[] new_test_bytes = ByteBuffer.allocate(4).putInt(test_ip).array();
+	            	ip_pkt_data[12] = new_test_bytes[0];
+	            	ip_pkt_data[13] = new_test_bytes[1];
+	            	ip_pkt_data[14] = new_test_bytes[2];
+	            	ip_pkt_data[15] = new_test_bytes[3];
+	            	*/
+	            	
+	            	byte dscp = (byte)((int)(ip_pkt_data[1])>>>2);
+	            	byte version = (byte)((int)(ip_pkt_data[0])>>>4);
+	            	System.err.println("DSCP:"+byteToHexString(dscp)+" VERSION:"+byteToHexString(version));
+	            	ip_pkt_data[ChecksumCalc.IP_CHECKSUM_INDEX] = 0x00;
+	            	ip_pkt_data[ChecksumCalc.IP_CHECKSUM_INDEX+1] = 0x00;
+	            	short new_checksum = ChecksumCalc.calculateIPChecksum(ip_pkt_data, ip_header_len);
+	            	byte[] new_checksum_bytes = ByteBuffer.allocate(2).putShort(new_checksum).array();
+	            	ip_pkt_data[ChecksumCalc.IP_CHECKSUM_INDEX] = new_checksum_bytes[0];
+	            	ip_pkt_data[ChecksumCalc.IP_CHECKSUM_INDEX+1] = new_checksum_bytes[1];
+	            	 	
+	            	byte[] new_ether_data = new byte[packet_len];
+	            	
+	            	for(int i=0; i<ChecksumCalc.ETHERNET_HEADER_LEN; i++)
+	            		new_ether_data[i] = packetData[i];
+	            	for(int i=ChecksumCalc.ETHERNET_HEADER_LEN,j=0; i<packet_len; i++,j++){
+	            		//System.err.println("new_ether_len "+new_ether_data.length+" ip_pkt_data:"+ip_pkt_data.length+" i:"+i+" j:"+j);
+	            		if(j < ip_pkt_data.length)
+	            			new_ether_data[i] = ip_pkt_data[j];
+	            		else
+	            			new_ether_data[i] = 0x00;
+	            	}
+	            	
+	            	System.err.println("EthernetPayload:"+bytesToHexString(packetData));
+	            	System.err.println("New IP  Payload:"+bytesToHexString(new_ether_data));
+	            	System.err.println("Checksum:"+shortToHexString(checksum)+" newChecksum"+shortToHexString(new_checksum)+" SourceIP:"+Integer.toHexString(src_ip));
+	            	
+	            	pktOut.setPacketData(new_ether_data);
+	            }
+	            else{
+	            	short eth_type = eth.getEtherType();
+	            	String eth_type_str = Integer.toHexString(eth_type & 0xffff);
+	            	System.err.println("msglen:"+msg_len+" packetlen:"+packet_len+" iplen: no ipv4 pkt :"+eth_type_str);
+	            	pktOut.setPacketData(packetData);
+	            }
             }
-            else{
-            	short eth_type = eth.getEtherType();
-            	String eth_type_str = Integer.toHexString(eth_type & 0xffff);
-            	System.err.println("msglen:"+msg_len+" packetlen:"+packet_len+" iplen: no ipv4 pkt :"+eth_type_str);
+            else{//===========NONE TEST======================
             	pktOut.setPacketData(packetData);
             }
             
-            */
-            //===========TEST======================
             
-            pktOut.setPacketData(packetData);
+            
+            
         }
         else 
         {
