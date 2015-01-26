@@ -254,9 +254,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 				return Command.CONTINUE;
 			}
 			
-			if(processedByOtherHoneynets(conn, ((OFPacketIn)msg).getInPort(), sw.getId()) ){
-				forwardPacket(sw,(OFPacketIn)msg, nc_mac_address,nw_ip_address,IPv4.toIPv4AddressBytes(conn.getDstIP()),((OFPacketIn)msg).getInPort(), eth,1);
-				forwardPacket(sw,(OFPacketIn)msg, nc_mac_address,nw_ip_address,IPv4.toIPv4AddressBytes(conn.getDstIP()),((OFPacketIn)msg).getInPort(), eth,2);
+			if(processedByOtherHoneynets(conn, ((OFPacketIn)msg).getInPort(), sw,msg, eth) ){
 				return Command.CONTINUE;
 			}
 			
@@ -514,7 +512,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 				return Command.CONTINUE;
 			}
 			//forwardPacket(sw,pktInMsg, dstMAC,dstIP,srcIP,outPort);
-			boolean result2 = forwardPacket(sw,pktInMsg, newDstMAC,newDstIP,srcIP,outPort, eth,0);
+			boolean result2 = forwardPacket(sw,pktInMsg, newDstMAC,newDstIP,srcIP,outPort, eth);
 			
 			if(!result1 || !result2){
 				logger.LogError("fail to install rule for "+conn);
@@ -752,7 +750,8 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 		
 		return result;
 	}
-	private boolean processedByOtherHoneynets(Connection conn, short inport, long switch_id){
+	private boolean processedByOtherHoneynets(Connection conn, short inport,IOFSwitch sw, OFMessage msg,Ethernet eth ){
+		long switch_id = sw.getId();
 		/*modify this part*/
 		byte[] src_tmp = IPv4.toIPv4AddressBytes(conn.srcIP);
 		byte[] dst_tmp = IPv4.toIPv4AddressBytes(conn.dstIP);
@@ -765,6 +764,12 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 			byte[] newDstIP = null;
 			byte[] newSrcIP = null;
 			short outPort = 0;
+			 
+			int src_ip = conn.srcIP;
+			short front_src_ip = (short)( (src_ip>>>16) & 0x0000ffff);
+			short end_src_ip = (short)(src_ip & 0x0000ffff);
+			forwardPacket2OtherNet(sw,(OFPacketIn)msg, nc_mac_address,nw_ip_address,IPv4.toIPv4AddressBytes(conn.getDstIP()),((OFPacketIn)msg).getInPort(), eth,(byte)0x01,front_src_ip);
+			forwardPacket2OtherNet(sw,(OFPacketIn)msg, nc_mac_address,nw_ip_address,IPv4.toIPv4AddressBytes(conn.getDstIP()),((OFPacketIn)msg).getInPort(), eth,(byte)0x02, end_src_ip);		
 			
 			/* outside->nw rule */
 			OFMatch match = new OFMatch();
@@ -981,7 +986,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 	}
 	
 	public boolean forwardPacket(IOFSwitch sw, OFPacketIn pktInMsg, 
-			byte[] dstMAC, byte[] destIP, byte[] srcIP, short outSwPort, Ethernet eth, int x) 
+			byte[] dstMAC, byte[] destIP, byte[] srcIP, short outSwPort, Ethernet eth) 
     {
         OFPacketOut pktOut = new OFPacketOut();        
         
@@ -1031,116 +1036,135 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
             byte[] packetData = pktInMsg.getPacketData();
             pktOut.setLength((short)(OFPacketOut.MINIMUM_LENGTH
                     + pktOut.getActionsLength() + packetData.length));
-            
-            
-            boolean test = true;
-            if(test){//===========TEST====================
-	            int packet_len = packetData.length;
-	            int msg_len = pktInMsg.getLength();
-	            IPacket pkt = eth.getPayload();
-	            
-	            if(pkt instanceof IPv4){
-	            	IPv4 ip_pkt = (IPv4)pkt;
-	            	int ip_len = ip_pkt.getTotalLength();
-	            	int ip_header_len = (ip_pkt.getHeaderLength() & 0x000000ff) * 4;
-	            	
-	            	System.err.println("msglen:"+msg_len+" packetlen:"+packet_len+" iplen:"+ip_len+" ip headerlen:"+ip_header_len);
-	            	short checksum = ip_pkt.getChecksum();
-	            	int src_ip = ip_pkt.getSourceAddress();
-	            	byte[] ip_pkt_data = Arrays.copyOfRange(packetData,
-	            				ChecksumCalc.ETHERNET_HEADER_LEN,ChecksumCalc.ETHERNET_HEADER_LEN + ip_len);
-	            	
-	            	/***** modify src ip*******/
-	            	/*
-	            	int test_ip = IPv4.toIPv4Address(test_ip_address);
-	            	byte[] new_test_bytes = ByteBuffer.allocate(4).putInt(test_ip).array();
-	            	ip_pkt_data[12] = new_test_bytes[0];
-	            	ip_pkt_data[13] = new_test_bytes[1];
-	            	ip_pkt_data[14] = new_test_bytes[2];
-	            	ip_pkt_data[15] = new_test_bytes[3];
-	            	*/
-	            	
-	            	byte dscp = (byte)((int)(ip_pkt_data[1])>>>2);
-	            	byte ecn =  (byte)((int)(ip_pkt_data[1])&0x03);
-	            	System.err.println("DSCP:"+byteToHexString(dscp)+" ECN:"+byteToHexString(ecn));
-	            	if(x==1)
-	            		dscp = 0x04;
-	            	else if(x==2)
-	            		dscp = 0x08;
-	            	
-	            	ip_pkt_data[1] = (byte)((dscp|ecn)&0xff);
-	            	dscp = (byte)((int)(ip_pkt_data[1])>>>2);
-	            	ecn =  (byte)((int)(ip_pkt_data[1])&0x03);
-	            	
-	            	System.err.println("NEW DSCP:"+byteToHexString(dscp)+" ECN:"+byteToHexString(ecn));
-	            	if(ChecksumCalc.reCalcAndUpdateIPPacketChecksum(ip_pkt_data, ip_header_len)==false){
-	            		System.err.println("error calculating ip pkt checksum");
-	            	}
-	            	
-	            	/*
-	            		ip_pkt_data[ChecksumCalc.IP_CHECKSUM_INDEX] = 0x00;
-	            		ip_pkt_data[ChecksumCalc.IP_CHECKSUM_INDEX+1] = 0x00;
-	            		short new_checksum = ChecksumCalc.calculateIPChecksum(ip_pkt_data, ip_header_len);
-	            		byte[] new_checksum_bytes = ByteBuffer.allocate(2).putShort(new_checksum).array();
-	            		ip_pkt_data[ChecksumCalc.IP_CHECKSUM_INDEX] = new_checksum_bytes[0];
-	            		ip_pkt_data[ChecksumCalc.IP_CHECKSUM_INDEX+1] = new_checksum_bytes[1];
-	            	*/
-	            	 	
-	            	byte[] new_ether_data = new byte[packet_len];
-	            	
-	            	for(int i=0; i<ChecksumCalc.ETHERNET_HEADER_LEN; i++)
-	            		new_ether_data[i] = packetData[i];
-	            	for(int i=ChecksumCalc.ETHERNET_HEADER_LEN,j=0; i<packet_len; i++,j++){
-	            		//System.err.println("new_ether_len "+new_ether_data.length+" ip_pkt_data:"+ip_pkt_data.length+" i:"+i+" j:"+j);
-	            		if(j < ip_pkt_data.length)
-	            			new_ether_data[i] = ip_pkt_data[j];
-	            		else
-	            			new_ether_data[i] = 0x00;
-	            	}
-	            	System.err.println("EthernetPayload:"+bytesToHexString(packetData));
-	            	System.err.println("New IP  Payload:"+bytesToHexString(new_ether_data));
-	            	//System.err.println("Checksum:"+shortToHexString(checksum)+" newChecksum"+shortToHexString(new_checksum)+" SourceIP:"+Integer.toHexString(src_ip));
-	            	
-	            	pktOut.setPacketData(new_ether_data);
-	            
-	            }
-	            else{
-	            	short eth_type = eth.getEtherType();
-	            	String eth_type_str = Integer.toHexString(eth_type & 0xffff);
-	            	System.err.println("msglen:"+msg_len+" packetlen:"+packet_len+" iplen: no ipv4 pkt :"+eth_type_str);
-	            	pktOut.setPacketData(packetData);
-	            	try 
-	                {
-	                    sw.write(pktOut, null);
-	                    sw.flush();
-	                    //logger.info("forwarded packet ");
-	                }
-	                catch (IOException e) 
-	                {
-	                	logger.LogError("failed forward packet");
-	         			return false;
-	                }
-	            }
-            }
-            else{//===========NONE TEST======================
-            	pktOut.setPacketData(packetData);
-            	 try 
-                 {
-                     sw.write(pktOut, null);
-                     sw.flush();
-                     //logger.info("forwarded packet ");
-                 }
-                 catch (IOException e) 
-                 {
-                 	logger.LogError("failed forward packet");
-         			return false;
-                 }
-            } 
+            pktOut.setPacketData(packetData);
            
         }//no buffer ID
         else 
         {
         	//System.err.println("debug NOT BUFFER_ID_NONE");
+        	pktOut.setLength((short)(OFPacketOut.MINIMUM_LENGTH
+                    + pktOut.getActionsLength()));
+        }
+        
+        try 
+        {
+            sw.write(pktOut, null);
+            sw.flush();
+            //logger.info("forwarded packet ");
+        }
+        catch (IOException e) 
+        {
+        	logger.LogError("failed forward packet");
+ 			return false;
+        }
+        return true;
+	}
+	
+	public boolean forwardPacket2OtherNet(IOFSwitch sw, OFPacketIn pktInMsg, 
+			byte[] dstMAC, byte[] destIP, byte[] srcIP, short outSwPort, Ethernet eth, byte dscp, short id) 
+    {
+        OFPacketOut pktOut = new OFPacketOut();        
+        
+        pktOut.setInPort(pktInMsg.getInPort());
+        pktOut.setBufferId(pktInMsg.getBufferId());
+        
+     	List<OFAction> actions = new ArrayList<OFAction>();
+     	int actionLen = 0;
+     	if(dstMAC != null){
+     		OFActionDataLayerDestination action_mod_dst_mac = 
+					new OFActionDataLayerDestination(dstMAC);
+     		actions.add(action_mod_dst_mac);
+     		actionLen += OFActionDataLayerDestination.MINIMUM_LENGTH;
+     	}
+		if(destIP != null){
+			OFActionNetworkLayerDestination action_mod_dst_ip = 
+					new OFActionNetworkLayerDestination(IPv4.toIPv4Address(destIP));
+			actions.add(action_mod_dst_ip);
+			actionLen += OFActionNetworkLayerDestination.MINIMUM_LENGTH;
+		}
+		if(srcIP != null){
+			OFActionNetworkLayerSource action_mod_src_ip = 
+					new OFActionNetworkLayerSource(IPv4.toIPv4Address(srcIP));
+			actions.add(action_mod_src_ip);
+			actionLen += OFActionNetworkLayerSource.MINIMUM_LENGTH;
+		}
+		
+		OFActionOutput action_out_port;
+		actionLen += OFActionOutput.MINIMUM_LENGTH;
+		if(pktInMsg.getInPort() == outSwPort){
+			action_out_port = new OFActionOutput(OFPort.OFPP_IN_PORT.getValue());
+		}
+		else{
+			action_out_port = new OFActionOutput(outSwPort);
+		}
+		
+		actions.add(action_out_port);
+		pktOut.setActions(actions);
+		pktOut.setActionsLength((short)actionLen);
+	    
+		
+        // Set data if it is included in the packet in but buffer id is NONE
+        if (pktOut.getBufferId() == OFPacketOut.BUFFER_ID_NONE) 
+        {
+        	//System.err.println("debug BUFFER_ID_NONE");
+            byte[] packetData = pktInMsg.getPacketData();
+            pktOut.setLength((short)(OFPacketOut.MINIMUM_LENGTH
+                    + pktOut.getActionsLength() + packetData.length));
+            
+            int packet_len = packetData.length;
+            int msg_len = pktInMsg.getLength();
+            IPacket pkt = eth.getPayload();
+            
+            if(pkt instanceof IPv4){
+            	IPv4 ip_pkt = (IPv4)pkt;
+            	int ip_len = ip_pkt.getTotalLength();
+            	int ip_header_len = (ip_pkt.getHeaderLength() & 0x000000ff) * 4;
+            	
+            	System.err.println("msglen:"+msg_len+" packetlen:"+packet_len+" iplen:"+ip_len+" ip headerlen:"+ip_header_len);
+            	byte[] ip_pkt_data = Arrays.copyOfRange(packetData,
+            				ChecksumCalc.ETHERNET_HEADER_LEN,ChecksumCalc.ETHERNET_HEADER_LEN + ip_len);
+            	
+            	/* Modify DSCP */
+            	byte ecn =  (byte)((int)(ip_pkt_data[1])&0x03);	
+            	ip_pkt_data[1] = (byte)((dscp|ecn)&0xff);
+            	dscp = (byte)((int)(ip_pkt_data[1])>>>2);
+            	ecn =  (byte)((int)(ip_pkt_data[1])&0x03);
+            	
+            	/* Modify ID */
+            	ip_pkt_data[4] = (byte)((id>>>8) & 0xff);
+            	ip_pkt_data[5] = (byte)(id & 0xff);
+            	
+            	//System.err.println("NEW DSCP:"+byteToHexString(dscp)+" ID:"+shortToHexString(ecn));
+            	if(ChecksumCalc.reCalcAndUpdateIPPacketChecksum(ip_pkt_data, ip_header_len)==false){
+            		System.err.println("error calculating ip pkt checksum");
+            	}
+            	 	
+            	byte[] new_ether_data = new byte[packet_len];
+            	
+            	for(int i=0; i<ChecksumCalc.ETHERNET_HEADER_LEN; i++)
+            		new_ether_data[i] = packetData[i];
+            	for(int i=ChecksumCalc.ETHERNET_HEADER_LEN,j=0; i<packet_len; i++,j++){
+            		if(j < ip_pkt_data.length)
+            			new_ether_data[i] = ip_pkt_data[j];
+            		else
+            			new_ether_data[i] = 0x00;
+            	}
+            	//System.err.println("EthernetPayload:"+bytesToHexString(packetData));
+            	//System.err.println("New IP  Payload:"+bytesToHexString(new_ether_data));
+            	
+            	pktOut.setPacketData(new_ether_data);      
+            }
+            else{
+            	short eth_type = eth.getEtherType();
+            	String eth_type_str = Integer.toHexString(eth_type & 0xffff);
+            	System.err.println("msglen:"+msg_len+" packetlen:"+packet_len+" iplen: no ipv4 pkt :"+eth_type_str);
+            	pktOut.setPacketData(packetData);
+            }
+           
+        }//no buffer ID
+        else 
+        {
+        	System.err.println("ERROR BUFFER ID IS NOT NONE");
         	pktOut.setLength((short)(OFPacketOut.MINIMUM_LENGTH
                     + pktOut.getActionsLength()));
         }
