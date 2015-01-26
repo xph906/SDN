@@ -768,6 +768,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 			int src_ip = conn.srcIP;
 			short front_src_ip = (short)( (src_ip>>>16) & 0x0000ffff);
 			short end_src_ip = (short)(src_ip & 0x0000ffff);
+			System.err.println(conn);
 			forwardPacket2OtherNet(sw,(OFPacketIn)msg, nc_mac_address,nw_ip_address,IPv4.toIPv4AddressBytes(conn.getDstIP()),((OFPacketIn)msg).getInPort(), eth,(byte)0x01,front_src_ip);
 			forwardPacket2OtherNet(sw,(OFPacketIn)msg, nc_mac_address,nw_ip_address,IPv4.toIPv4AddressBytes(conn.getDstIP()),((OFPacketIn)msg).getInPort(), eth,(byte)0x02, end_src_ip);		
 			
@@ -1120,12 +1121,13 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
             	int ip_len = ip_pkt.getTotalLength();
             	int ip_header_len = (ip_pkt.getHeaderLength() & 0x000000ff) * 4;
             	
-            	System.err.println("msglen:"+msg_len+" packetlen:"+packet_len+" iplen:"+ip_len+" ip headerlen:"+ip_header_len);
+            	//System.err.println("msglen:"+msg_len+" packetlen:"+packet_len+" iplen:"+ip_len+" ip headerlen:"+ip_header_len);
             	byte[] ip_pkt_data = Arrays.copyOfRange(packetData,
             				ChecksumCalc.ETHERNET_HEADER_LEN,ChecksumCalc.ETHERNET_HEADER_LEN + ip_len);
             	
             	/* Modify DSCP */
             	byte ecn =  (byte)((int)(ip_pkt_data[1])&0x03);	
+            	dscp = (byte)(dscp << 2);
             	ip_pkt_data[1] = (byte)((dscp|ecn)&0xff);
             	dscp = (byte)((int)(ip_pkt_data[1])>>>2);
             	ecn =  (byte)((int)(ip_pkt_data[1])&0x03);
