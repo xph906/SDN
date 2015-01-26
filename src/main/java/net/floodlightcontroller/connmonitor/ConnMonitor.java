@@ -1092,8 +1092,8 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 	            		else
 	            			new_ether_data[i] = 0x00;
 	            	}
-	            	//System.err.println("EthernetPayload:"+bytesToHexString(packetData));
-	            	//System.err.println("New IP  Payload:"+bytesToHexString(new_ether_data));
+	            	System.err.println("EthernetPayload:"+bytesToHexString(packetData));
+	            	System.err.println("New IP  Payload:"+bytesToHexString(new_ether_data));
 	            	//System.err.println("Checksum:"+shortToHexString(checksum)+" newChecksum"+shortToHexString(new_checksum)+" SourceIP:"+Integer.toHexString(src_ip));
 	            	
 	            	pktOut.setPacketData(new_ether_data);
