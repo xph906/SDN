@@ -1,5 +1,7 @@
 package net.floodlightcontroller.connmonitor;
 
+import java.nio.ByteBuffer;
+
 public class ChecksumCalc {
 	 public static final short ETHERNET_HEADER_LEN = 14;
 	 public static final short IP_CHECKSUM_INDEX = 10;
@@ -62,5 +64,20 @@ public class ChecksumCalc {
 		sum = ~sum;
 		sum = sum & 0xFFFF;
 		return (short)sum;
+	}
+	
+	static boolean reCalcAndUpdateIPPacketChecksum(byte[] ip_data, int ip_header_len){
+		if(ip_data == null)
+			return false;
+		if(ip_data.length < ip_header_len)
+			return false;
+		ip_data[IP_CHECKSUM_INDEX] = 0x00;
+		ip_data[IP_CHECKSUM_INDEX+1] = 0x00;
+    	short new_checksum = calculateIPChecksum(ip_data, ip_header_len);
+    	byte[] new_checksum_bytes = ByteBuffer.allocate(2).putShort(new_checksum).array();
+    	ip_data[IP_CHECKSUM_INDEX] = new_checksum_bytes[0];
+    	ip_data[IP_CHECKSUM_INDEX+1] = new_checksum_bytes[1];
+    	
+		return true;
 	}
 }

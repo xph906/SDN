@@ -1066,13 +1066,20 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 	            	ip_pkt_data[1] = (byte)((dscp|ecn)&0xff);
 	            	dscp = (byte)((int)(ip_pkt_data[1])>>>2);
 	            	ecn =  (byte)((int)(ip_pkt_data[1])&0x03);
+	            	
 	            	System.err.println("NEW DSCP:"+byteToHexString(dscp)+" ECN:"+byteToHexString(ecn));
-	            	ip_pkt_data[ChecksumCalc.IP_CHECKSUM_INDEX] = 0x00;
-	            	ip_pkt_data[ChecksumCalc.IP_CHECKSUM_INDEX+1] = 0x00;
-	            	short new_checksum = ChecksumCalc.calculateIPChecksum(ip_pkt_data, ip_header_len);
-	            	byte[] new_checksum_bytes = ByteBuffer.allocate(2).putShort(new_checksum).array();
-	            	ip_pkt_data[ChecksumCalc.IP_CHECKSUM_INDEX] = new_checksum_bytes[0];
-	            	ip_pkt_data[ChecksumCalc.IP_CHECKSUM_INDEX+1] = new_checksum_bytes[1];
+	            	if(ChecksumCalc.reCalcAndUpdateIPPacketChecksum(ip_pkt_data, ip_header_len)==false){
+	            		System.err.println("error calculating ip pkt checksum");
+	            	}
+	            	
+	            	/*
+	            		ip_pkt_data[ChecksumCalc.IP_CHECKSUM_INDEX] = 0x00;
+	            		ip_pkt_data[ChecksumCalc.IP_CHECKSUM_INDEX+1] = 0x00;
+	            		short new_checksum = ChecksumCalc.calculateIPChecksum(ip_pkt_data, ip_header_len);
+	            		byte[] new_checksum_bytes = ByteBuffer.allocate(2).putShort(new_checksum).array();
+	            		ip_pkt_data[ChecksumCalc.IP_CHECKSUM_INDEX] = new_checksum_bytes[0];
+	            		ip_pkt_data[ChecksumCalc.IP_CHECKSUM_INDEX+1] = new_checksum_bytes[1];
+	            	*/
 	            	 	
 	            	byte[] new_ether_data = new byte[packet_len];
 	            	
@@ -1085,46 +1092,101 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 	            		else
 	            			new_ether_data[i] = 0x00;
 	            	}
-	            	
 	            	//System.err.println("EthernetPayload:"+bytesToHexString(packetData));
 	            	//System.err.println("New IP  Payload:"+bytesToHexString(new_ether_data));
 	            	//System.err.println("Checksum:"+shortToHexString(checksum)+" newChecksum"+shortToHexString(new_checksum)+" SourceIP:"+Integer.toHexString(src_ip));
 	            	
 	            	pktOut.setPacketData(new_ether_data);
+	            	try 
+	                {
+	                    sw.write(pktOut, null);
+	                    sw.flush();
+	                    //logger.info("forwarded packet ");
+	                }
+	                catch (IOException e) 
+	                {
+	                	logger.LogError("failed forward packet");
+	         			return false;
+	                }
+	            	
+	            	dscp = (byte)((int)(ip_pkt_data[1])>>>2);
+	            	ecn =  (byte)((int)(ip_pkt_data[1])&0x03);
+	            	System.err.println("DSCP:"+byteToHexString(dscp)+" ECN:"+byteToHexString(ecn));
+	            	dscp = 0x08;
+	            	ip_pkt_data[1] = (byte)((dscp|ecn)&0xff);
+	            	dscp = (byte)((int)(ip_pkt_data[1])>>>2);
+	            	ecn =  (byte)((int)(ip_pkt_data[1])&0x03);
+	            	
+	            	System.err.println("Second DSCP:"+byteToHexString(dscp)+" ECN:"+byteToHexString(ecn));
+	            	if(ChecksumCalc.reCalcAndUpdateIPPacketChecksum(ip_pkt_data, ip_header_len)==false){
+	            		System.err.println("error calculating ip pkt checksum");
+	            	}
+	            	pktOut.setPacketData(new_ether_data);
+	            	try 
+	                {
+	                    sw.write(pktOut, null);
+	                    sw.flush();
+	                    //logger.info("forwarded packet ");
+	                }
+	                catch (IOException e) 
+	                {
+	                	logger.LogError("failed forward packet");
+	         			return false;
+	                }
+	            	
+	            	
 	            }
 	            else{
 	            	short eth_type = eth.getEtherType();
 	            	String eth_type_str = Integer.toHexString(eth_type & 0xffff);
 	            	System.err.println("msglen:"+msg_len+" packetlen:"+packet_len+" iplen: no ipv4 pkt :"+eth_type_str);
 	            	pktOut.setPacketData(packetData);
+	            	try 
+	                {
+	                    sw.write(pktOut, null);
+	                    sw.flush();
+	                    //logger.info("forwarded packet ");
+	                }
+	                catch (IOException e) 
+	                {
+	                	logger.LogError("failed forward packet");
+	         			return false;
+	                }
 	            }
             }
             else{//===========NONE TEST======================
             	pktOut.setPacketData(packetData);
-            }
-            
-            
-            
-            
-        }
+            	 try 
+                 {
+                     sw.write(pktOut, null);
+                     sw.flush();
+                     //logger.info("forwarded packet ");
+                 }
+                 catch (IOException e) 
+                 {
+                 	logger.LogError("failed forward packet");
+         			return false;
+                 }
+            } 
+           
+        }//no buffer ID
         else 
         {
         	//System.err.println("debug NOT BUFFER_ID_NONE");
         	pktOut.setLength((short)(OFPacketOut.MINIMUM_LENGTH
                     + pktOut.getActionsLength()));
-        }
-        
-        // Send the packet to the switch
-        try 
-        {
-            sw.write(pktOut, null);
-            sw.flush();
-            //logger.info("forwarded packet ");
-        }
-        catch (IOException e) 
-        {
-        	logger.LogError("failed forward packet");
-			return false;
+        	// Send the packet to the switch
+            try 
+            {
+                sw.write(pktOut, null);
+                sw.flush();
+                //logger.info("forwarded packet ");
+            }
+            catch (IOException e) 
+            {
+            	logger.LogError("failed forward packet");
+    			return false;
+            }
         }
         
         return true;
