@@ -1060,8 +1060,13 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 	            	*/
 	            	
 	            	byte dscp = (byte)((int)(ip_pkt_data[1])>>>2);
-	            	byte version = (byte)((int)(ip_pkt_data[0])>>>4);
-	            	System.err.println("DSCP:"+byteToHexString(dscp)+" VERSION:"+byteToHexString(version));
+	            	byte ecn =  (byte)((int)(ip_pkt_data[1])&0x03);
+	            	System.err.println("DSCP:"+byteToHexString(dscp)+" ECN:"+byteToHexString(ecn));
+	            	dscp = 0x04;
+	            	ip_pkt_data[1] = (byte)((dscp|ecn)&0xff);
+	            	dscp = (byte)((int)(ip_pkt_data[1])>>>2);
+	            	ecn =  (byte)((int)(ip_pkt_data[1])&0x03);
+	            	System.err.println("NEW DSCP:"+byteToHexString(dscp)+" ECN:"+byteToHexString(ecn));
 	            	ip_pkt_data[ChecksumCalc.IP_CHECKSUM_INDEX] = 0x00;
 	            	ip_pkt_data[ChecksumCalc.IP_CHECKSUM_INDEX+1] = 0x00;
 	            	short new_checksum = ChecksumCalc.calculateIPChecksum(ip_pkt_data, ip_header_len);
@@ -1081,9 +1086,9 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 	            			new_ether_data[i] = 0x00;
 	            	}
 	            	
-	            	System.err.println("EthernetPayload:"+bytesToHexString(packetData));
-	            	System.err.println("New IP  Payload:"+bytesToHexString(new_ether_data));
-	            	System.err.println("Checksum:"+shortToHexString(checksum)+" newChecksum"+shortToHexString(new_checksum)+" SourceIP:"+Integer.toHexString(src_ip));
+	            	//System.err.println("EthernetPayload:"+bytesToHexString(packetData));
+	            	//System.err.println("New IP  Payload:"+bytesToHexString(new_ether_data));
+	            	//System.err.println("Checksum:"+shortToHexString(checksum)+" newChecksum"+shortToHexString(new_checksum)+" SourceIP:"+Integer.toHexString(src_ip));
 	            	
 	            	pktOut.setPacketData(new_ether_data);
 	            }
