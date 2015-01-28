@@ -1519,7 +1519,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 	    //initPorts();
 	    
 	    /* Init other honeynet */
-	    Honeynet.putHoneynet("nw", IPv4.toIPv4Address("129.105.44.107"), IPv4.toIPv4Address("130.107.240.0"), 28);
+	    Honeynet.putHoneynet("nw", IPv4.toIPv4Address("129.105.44.107"), IPv4.toIPv4Address("130.107.240.0"), 20);
 	      
 	    lastClearConnMapTime = System.currentTimeMillis();
 	    lastClearConnToPotTime = System.currentTimeMillis();
