@@ -151,6 +151,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 	protected Hashtable<Long,Connection> connMap;
 	protected Hashtable<String, Connection> connToPot;
 	protected Hashtable<String, HashSet<Integer> > HIHClientMap;
+	protected Hashtable<String, ForwardFlowItem> forwardFlowTable;
 
 	protected IFloodlightProviderService floodlightProvider;
 	protected IRestApiService restApi;
@@ -1325,9 +1326,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 	}
 	
 	private void clearMaps(){
-		if((connMap.size()<CONN_MAX_SIZE) && (connToPot.size()<CONN_MAX_SIZE)){
-			return ;
-		}
+		
 		if(connToPot.size()>= CONN_MAX_SIZE){
 			connToPot = new Hashtable<String,Connection>();
 			long currTime = System.currentTimeMillis();
@@ -1342,6 +1341,9 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 			logger.LogError("Clear connMap after "+currTime/1000+" seconds");
 			lastClearConnMapTime = System.currentTimeMillis();
 		}
+		if(forwardFlowTable.size() >= CONN_MAX_SIZE/2){
+			forwardFlowTable = new Hashtable<String, ForwardFlowItem>();
+		}
 	}
 	private void forceClearMaps(){
 		connToPot = new Hashtable<String,Connection>();
@@ -1355,6 +1357,8 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 		currTime -= lastClearConnMapTime;
 		logger.LogError("Clear connMap after "+currTime/1000+" seconds");
 		lastClearConnMapTime = System.currentTimeMillis();
+		
+		forwardFlowTable = new Hashtable<String, ForwardFlowItem>();
 		System.gc();
 	}
 	
@@ -1506,6 +1510,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 	    HIHClientMap = new Hashtable<String, HashSet<Integer> >();
 	    HIHNameMap = new Hashtable<Long, String>();
 	    HIHFlowCount = new Hashtable<String, Integer>();
+	    forwardFlowTable = new Hashtable<String, ForwardFlowItem>() ;
 	    executor = Executors.newFixedThreadPool(1);
 	    logger = new MyLogger(); 
 		
