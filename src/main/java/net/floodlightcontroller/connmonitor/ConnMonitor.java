@@ -752,9 +752,81 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 	}
 	private boolean processedByOtherHoneynets(Connection conn, short inport,IOFSwitch sw, OFMessage msg,Ethernet eth ){
 		long switch_id = sw.getId();
+		
+		/* NW */
+		Honeynet nw = Honeynet.getHoneynet("nw");
+		Honeynet.SubnetMask mask = nw.getMask();
+		if((conn.srcIP==nw.getIp()) && (Honeynet.inSubnet(mask,conn.dstIP))){
+			System.err.println("SENT FROM NW src:"+IPv4.fromIPv4Address(conn.srcIP)+" dst:"+IPv4.fromIPv4Address(conn.dstIP));
+			return true;
+		}
+		else if(Honeynet.inSubnet(mask,conn.dstIP)){
+			System.err.println("SENT TO NW src:"+IPv4.fromIPv4Address(conn.srcIP)+" dst:"+IPv4.fromIPv4Address(conn.dstIP));
+			byte[] newDstMAC = null;
+			byte[] newDstIP = null;
+			byte[] newSrcIP = null;
+			short outPort = 0;
+			 
+			int src_ip = conn.srcIP;
+			short front_src_ip = (short)( (src_ip>>>16) & 0x0000ffff);
+			short end_src_ip = (short)(src_ip & 0x0000ffff);
+			System.err.println(conn);
+			forwardPacket2OtherNet(sw,(OFPacketIn)msg, nc_mac_address,nw_ip_address,IPv4.toIPv4AddressBytes(conn.getDstIP()),((OFPacketIn)msg).getInPort(), eth,(byte)0x01,front_src_ip);
+			forwardPacket2OtherNet(sw,(OFPacketIn)msg, nc_mac_address,nw_ip_address,IPv4.toIPv4AddressBytes(conn.getDstIP()),((OFPacketIn)msg).getInPort(), eth,(byte)0x02, end_src_ip);		
+			
+			/* outside->nw rule */
+			OFMatch match = new OFMatch();
+			match.setDataLayerType((short)0x0800);
+			match.setNetworkDestination(conn.dstIP);
+			match.setNetworkSource(conn.srcIP);
+			match.setInputPort(inport);
+			match.setTransportSource(conn.srcPort);
+			match.setTransportDestination(conn.dstPort);
+			match.setNetworkProtocol(conn.getProtocol());
+			match.setWildcards(	
+				OFMatch.OFPFW_DL_DST | OFMatch.OFPFW_DL_SRC | 	
+				OFMatch.OFPFW_NW_TOS |   
+				OFMatch.OFPFW_DL_VLAN |OFMatch.OFPFW_DL_VLAN_PCP );
+			newDstMAC = nc_mac_address;
+			newDstIP = nw_ip_address;
+			newSrcIP = IPv4.toIPv4AddressBytes(conn.dstIP);
+			outPort = inport;
+			boolean rs1 = installPathForFlow(switch_id,inport,match,(short)0,(long)0, newDstMAC,newDstIP,newSrcIP,outPort,IDLE_TIMEOUT,HARD_TIMEOUT,HIGH_PRIORITY);
+				
+			/* nw->outside rule */
+			match = new OFMatch();	
+			match.setDataLayerType((short)0x0800);
+			match.setNetworkDestination(conn.dstIP);
+			match.setNetworkSource(IPv4.toIPv4Address(nw_ip_address));
+			match.setTransportSource(conn.dstPort);
+			match.setTransportDestination(conn.srcPort);
+			match.setInputPort(inport);
+			match.setNetworkProtocol(conn.getProtocol());
+			match.setWildcards(	
+					OFMatch.OFPFW_DL_DST | OFMatch.OFPFW_DL_SRC | 	
+					 OFMatch.OFPFW_NW_TOS |   
+					OFMatch.OFPFW_DL_VLAN |OFMatch.OFPFW_DL_VLAN_PCP);
+			newDstMAC = nc_mac_address;
+			newDstIP = IPv4.toIPv4AddressBytes(conn.srcIP);
+			newSrcIP = IPv4.toIPv4AddressBytes(conn.dstIP);
+			outPort = inport;
+			boolean rs2 = installPathForFlow(switch_id,inport,match,(short)0,(long)0, newDstMAC,newDstIP,newSrcIP,outPort,IDLE_TIMEOUT,HARD_TIMEOUT,HIGH_PRIORITY);			
+			boolean rs = rs1 & rs2;
+			if (rs == false){
+				System.err.println("Fail setting ruls for sending traffic to NW");
+			}
+			
+			return true;
+		}
+		return false;
+	}
+	
+	private boolean processedByOtherHoneynets_(Connection conn, short inport,IOFSwitch sw, OFMessage msg,Ethernet eth ){
+		long switch_id = sw.getId();
 		/*modify this part*/
 		byte[] src_tmp = IPv4.toIPv4AddressBytes(conn.srcIP);
 		byte[] dst_tmp = IPv4.toIPv4AddressBytes(conn.dstIP);
+		
 		if( (src_tmp[0]==(byte)129) && (src_tmp[1]==(byte)105) && (src_tmp[2]==(byte)44) && (src_tmp[3]==(byte)107) ){
 			System.err.println("Packages sent from NW: "+conn );
 		    return true;	
@@ -1442,6 +1514,9 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 		/* Init Honeypots */
 	    initHoneypots();
 	    //initPorts();
+	    
+	    /* Init other honeynet */
+	    Honeynet.putHoneynet("nw", IPv4.toIPv4Address("129.105.44.107"), IPv4.toIPv4Address("130.107.240.0"), 28);
 	      
 	    lastClearConnMapTime = System.currentTimeMillis();
 	    lastClearConnToPotTime = System.currentTimeMillis();
