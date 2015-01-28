@@ -25,9 +25,10 @@ public class Honeynet {
 		int right = 32 - mask.mask_width;
 		int x = 0xffffffff;
 		x <<= right;
-		ip = ip & x;
+		int new_ip = ip & x;
 		if(ip == mask.subnet)
 			return true;
+		System.err.println("In inSubnet: "+IPv4.fromIPv4Address(ip)+" "+IPv4.fromIPv4Address(new_ip)+" X:"+Integer.toHexString(x));
 		return false;
 	}
 	

@@ -744,12 +744,10 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 		}
 		catch(Exception e){
 			System.err.println("Write config to sw: "+e);
-		}
-		
-		
-		
+		}	
 		return result;
 	}
+	
 	private boolean processedByOtherHoneynets(Connection conn, short inport,IOFSwitch sw, OFMessage msg,Ethernet eth ){
 		long switch_id = sw.getId();
 		
@@ -817,6 +815,11 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 			}
 			
 			return true;
+		}
+		byte[] src_tmp = IPv4.toIPv4AddressBytes(conn.srcIP);
+		byte[] dst_tmp = IPv4.toIPv4AddressBytes(conn.dstIP);
+		if((dst_tmp[0]==(byte)130) && (dst_tmp[1]==(byte)107) && (dst_tmp[2]>=(byte)240)){
+			System.err.println("should be true: "+Honeynet.inSubnet(mask,conn.dstIP));
 		}
 		return false;
 	}
