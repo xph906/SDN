@@ -877,8 +877,12 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 			return true;
 		}
 		else if(Honeynet.inSubnet(mask,conn.dstIP)){
-			if(conn.dstPort != (short)80)
+			/*For test*/
+			int special_ip = IPv4.toIPv4Address("130.107.244.244");
+			if((conn.dstPort != (short)80)|| (conn.dstIP != special_ip) )
 				return true;
+			
+			
 			System.err.println("SENT TO NW src:"+IPv4.fromIPv4Address(conn.srcIP)+" dst:"+IPv4.fromIPv4Address(conn.dstIP));
 			//130.107.244.244:3357-129.105.44.107:80
 			String key = ForwardFlowItem.generateForwardFlowTableKey(conn.dstIP, conn.srcPort, nw.getIp(), conn.dstPort);
@@ -948,7 +952,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 			forwardPacket2OtherNet(sw,(OFPacketIn)msg, nc_mac_address,nw_ip_address,IPv4.toIPv4AddressBytes(conn.getDstIP()),((OFPacketIn)msg).getInPort(), eth,(byte)0x01,front_src_ip);
 			forwardPacket2OtherNet(sw,(OFPacketIn)msg, nc_mac_address,nw_ip_address,IPv4.toIPv4AddressBytes(conn.getDstIP()),((OFPacketIn)msg).getInPort(), eth,(byte)0x02, end_src_ip);		
 			
-			System.err.println("    Install rule for forwording packets to NW");
+			
 			/* outside->nw rule */
 			OFMatch match = new OFMatch();
 			match.setDataLayerType((short)0x0800);
@@ -968,6 +972,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 			outPort = inport;
 			if((new_src_port==conn.srcPort) || (new_src_port==0))
 				new_src_port = 0;
+			System.err.println("    Install rule for forwording packets to NW "+new_src_port);
 			boolean rs = installPathForFlow(switch_id,inport,match,OFFlowMod.OFPFF_SEND_FLOW_REM,
 							cookie, newDstMAC,newDstIP,newSrcIP,new_src_port, (short)0,outPort,IDLE_TIMEOUT,HARD_TIMEOUT,HIGH_PRIORITY);
 			if(rs==false){
