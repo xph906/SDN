@@ -1,5 +1,6 @@
 package net.floodlightcontroller.connmonitor;
 
+import java.util.Hashtable;
 import java.util.Random;
 
 public class ForwardFlowItem {
@@ -9,7 +10,12 @@ public class ForwardFlowItem {
 	private short src_port;
 	private int dst_ip;
 	private short dst_port;
-	private int new_src_port;
+	private short new_src_port;
+	private long flow_cookie;
+	private byte protocol;
+	private int remote_ip;
+	
+	private ForwardFLowItemState state;
 	
 	static public String generateForwardFlowTableKey(int src_ip, short src_port, int dst_ip, short dst_port){
 		StringBuilder sb = new StringBuilder();
@@ -27,9 +33,12 @@ public class ForwardFlowItem {
 		return (short)(rnd.nextInt()&0x0000ffff );
 		
 	}
+	public enum ForwardFLowItemState {
+	    USE, WAIT_FOR_DEL_ACK,WAIT_FOR_SETUP_ACK,FREE 
+	}
 	
 	/* new_src_port == 0 => src_port not getting changed */
-	public ForwardFlowItem(int src_ip, short src_port, int dst_ip, short dst_port, short new_src_port, long timeout){
+	public ForwardFlowItem(int src_ip, short src_port, int dst_ip, short dst_port, short new_src_port, long timeout, byte protocol,int remote_ip){
 		this.src_ip = src_ip;
 		this.src_port = src_port;
 		this.dst_ip = dst_ip;
@@ -41,6 +50,10 @@ public class ForwardFlowItem {
 		
 		this.timeout = timeout;	
 		this.starting_time = System.currentTimeMillis();
+		this.state = ForwardFLowItemState.USE;
+		this.flow_cookie = 0;
+		this.protocol = protocol;
+		this.setRemote_ip(remote_ip);
 	}
 	
 	public boolean expire(){
@@ -90,11 +103,35 @@ public class ForwardFlowItem {
 	public void setDst_port(short dst_port) {
 		this.dst_port = dst_port;
 	}
-	public int getNew_src_port() {
+	public short getNew_src_port() {
 		return new_src_port;
 	}
-	public void setNew_src_port(int new_src_port) {
+	public void setNew_src_port(short new_src_port) {
 		this.new_src_port = new_src_port;
+	}
+	public ForwardFLowItemState getState() {
+		return state;
+	}
+	public void setState(ForwardFLowItemState state) {
+		this.state = state;
+	}
+	public long getFlow_cookie() {
+		return flow_cookie;
+	}
+	public void setFlow_cookie(long flow_cookie) {
+		this.flow_cookie = flow_cookie;
+	}
+	public byte getProtocol() {
+		return protocol;
+	}
+	public void setProtocol(byte protocol) {
+		this.protocol = protocol;
+	}
+	public int getRemote_ip() {
+		return remote_ip;
+	}
+	public void setRemote_ip(int remote_ip) {
+		this.remote_ip = remote_ip;
 	}
 	
 }

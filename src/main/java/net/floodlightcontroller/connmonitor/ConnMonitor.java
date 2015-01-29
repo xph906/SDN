@@ -47,6 +47,8 @@ import org.openflow.protocol.action.OFActionDataLayerDestination;
 import org.openflow.protocol.action.OFActionNetworkLayerDestination;
 import org.openflow.protocol.action.OFActionNetworkLayerSource;
 import org.openflow.protocol.action.OFActionOutput;
+import org.openflow.protocol.action.OFActionTransportLayerDestination;
+import org.openflow.protocol.action.OFActionTransportLayerSource;
 import org.openflow.protocol.statistics.OFFlowStatisticsReply;
 import org.openflow.protocol.statistics.OFFlowStatisticsRequest;
 import org.openflow.protocol.statistics.OFStatistics;
@@ -107,7 +109,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 	static int public_honeypot_net_mask = 16;
 	
 	//FIXME: move these to configure file 
-	static byte[] nw_ip_address = {(byte)129,(byte)105,(byte)44, (byte)107};
+	//static byte[] nw_ip_address = {(byte)129,(byte)105,(byte)44, (byte)107};
 	static byte[] test_ip_address = {(byte)130,(byte)107,(byte)240, (byte)188};
 	/*
 	 * only for test... 
@@ -151,7 +153,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 	protected Hashtable<Long,Connection> connMap;
 	protected Hashtable<String, Connection> connToPot;
 	protected Hashtable<String, HashSet<Integer> > HIHClientMap;
-	protected Hashtable<String, ForwardFlowItem> forwardFlowTable;
+	protected ForwardFlowTable forwardFlowTable;
 
 	protected IFloodlightProviderService floodlightProvider;
 	protected IRestApiService restApi;
@@ -426,7 +428,10 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 				outPort = missouri_default_out_port;
 				byte[] newSrcIP = IPv4.toIPv4AddressBytes(conn.dstIP);
 				result1 = 
-					installPathForFlow(sw.getId(),conn.pot.getOutPort(),match,(short)0,conn.pot.getId(), newDstMAC,newDstIP,newSrcIP,outPort,(short)0,(short)(HIH_HARD_TIMEOUT+DELTA),HIGH_PRIORITY);
+					installPathForFlow(sw.getId(),conn.pot.getOutPort(),match,(short)0,conn.pot.getId(), 
+							newDstMAC,newDstIP,newSrcIP,
+							(short)0, (short)0,
+							outPort,(short)0,(short)(HIH_HARD_TIMEOUT+DELTA),HIGH_PRIORITY);
 				
 				//e2i
 				match = new OFMatch();	
@@ -445,7 +450,8 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 				newDstIP = conn.getHoneyPot().getIpAddress();
 				outPort = conn.pot.getOutPort();
 				boolean result2 = 
-						installPathForFlow(sw.getId(),pktInMsg.getInPort(),match,OFFlowMod.OFPFF_SEND_FLOW_REM,conn.pot.getId(), newDstMAC,newDstIP,srcIP,outPort,HIH_IDLE_TIMEOUT,HIH_HARD_TIMEOUT,HIGH_PRIORITY);
+						installPathForFlow(sw.getId(),pktInMsg.getInPort(),match,OFFlowMod.OFPFF_SEND_FLOW_REM,conn.pot.getId(), 
+										newDstMAC,newDstIP,srcIP,(short)0, (short)0,outPort,HIH_IDLE_TIMEOUT,HIH_HARD_TIMEOUT,HIGH_PRIORITY);
 					
 				result1 &= result2;
 				int count = HIHFlowCount.get(conn.getHoneyPot().getName());
@@ -469,7 +475,8 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 				newDstMAC = nc_mac_address;
 				outPort = pktInMsg.getInPort();
 				byte[] newSrcIP = IPv4.toIPv4AddressBytes(conn.dstIP);	
-				result1 = installPathForFlow(sw.getId(),pktInMsg.getInPort(),match,(short)0,(long)0, newDstMAC,newDstIP,newSrcIP,outPort,IDLE_TIMEOUT,HARD_TIMEOUT,HIGH_PRIORITY);
+				result1 = installPathForFlow(sw.getId(),pktInMsg.getInPort(),match,(short)0,(long)0, 
+									newDstMAC,newDstIP,newSrcIP,(short)0, (short)0,outPort,IDLE_TIMEOUT,HARD_TIMEOUT,HIGH_PRIORITY);
 					
 				match = new OFMatch();	
 				match.setDataLayerType((short)0x0800);
@@ -486,7 +493,8 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 				newDstMAC = lassen_mac_address;
 				newDstIP = conn.getHoneyPot().getIpAddress();
 				outPort = pktInMsg.getInPort();
-				boolean result2 = installPathForFlow(sw.getId(),pktInMsg.getInPort(),match,(short)0,(long)0, newDstMAC,newDstIP,srcIP,outPort,IDLE_TIMEOUT,HARD_TIMEOUT,HIGH_PRIORITY);			
+				boolean result2 = installPathForFlow(sw.getId(),pktInMsg.getInPort(),match,(short)0,(long)0,
+									newDstMAC,newDstIP,srcIP,(short)0, (short)0,outPort,IDLE_TIMEOUT,HARD_TIMEOUT,HIGH_PRIORITY);			
 				result1 &= result2;
 			}
 			else if(conn.type == Connection.INTERNAL_TO_EXTERNAL){
@@ -506,7 +514,8 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 				
 				newDstMAC = nc_mac_address;
 				outPort = pktInMsg.getInPort();
-				result1 = installPathForFlow(sw.getId(), pktInMsg.getInPort(),match,(short)0,(long)0,newDstMAC,newDstIP,srcIP,outPort,IDLE_TIMEOUT,HARD_TIMEOUT,HIGH_PRIORITY);
+				result1 = installPathForFlow(sw.getId(), pktInMsg.getInPort(),match,(short)0,(long)0,
+										newDstMAC,newDstIP,srcIP,(short)0, (short)0,outPort,IDLE_TIMEOUT,HARD_TIMEOUT,HIGH_PRIORITY);
 			}
 			else{
 				logger.LogError("shouldn't come here 3 "+conn);
@@ -534,6 +543,11 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 			IOFSwitch sw, OFMessage msg, FloodlightContext cntx){
 		if(msg instanceof OFFlowRemoved){
 			OFFlowRemoved removedMsg = (OFFlowRemoved)msg;
+			/*	Add codes here to detect ForwardFlow gets removed 
+			 * 	remember to update cookie_key_map, table and send request to NW
+			 */
+
+			
 			if(removedMsg.getReason()==OFFlowRemoved.OFFlowRemovedReason.OFPRR_DELETE){
 				return Command.CONTINUE;
 			}
@@ -705,7 +719,8 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 		byte[] newSrcIP = null;
 		short outPort = OFPort.OFPP_CONTROLLER.getValue();
 		boolean result = 
-				installPathForFlow(sw.getId(),(short)0,match,(short)0,(long)0, newDstMAC,newDstIP,newSrcIP,outPort,(short)0, (short)0,DEFAULT_PRIORITY);
+				installPathForFlow(sw.getId(),(short)0,match,(short)0,(long)0, newDstMAC,newDstIP,newSrcIP,
+							(short)0, (short)0,outPort,(short)0, (short)0,DEFAULT_PRIORITY);
 		
 		if(!result){
 			logger.LogError("fail to create default rule1 for MISSOURI 1");
@@ -723,7 +738,8 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 				OFMatch.OFPFW_NW_PROTO | OFMatch.OFPFW_NW_TOS |
 				OFMatch.OFPFW_TP_SRC | OFMatch.OFPFW_TP_DST |   
 				OFMatch.OFPFW_IN_PORT);
-		result = installPathForFlow(sw.getId(),(short)0,match,(short)0,(long)0, newDstMAC,newDstIP,newSrcIP,outPort,(short)0, (short)0,DEFAULT_PRIORITY);
+		result = installPathForFlow(sw.getId(),(short)0,match,(short)0,(long)0, newDstMAC,newDstIP,newSrcIP,
+							(short)0, (short)0,outPort,(short)0, (short)0,DEFAULT_PRIORITY);
 		
 		if(!result){
 			logger.LogError("fail to create default rule1 for MISSOURI 2");
@@ -749,23 +765,180 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 		return result;
 	}
 	
+	private void deleteForwardRule(IOFSwitch sw, ForwardFlowItem item){
+		System.err.println("    deleteForwardRule");
+		OFFlowMod ruleIncoming = new OFFlowMod();
+		ruleIncoming.setOutPort(OFPort.OFPP_NONE);
+		ruleIncoming.setCommand(OFFlowMod.OFPFC_DELETE);
+		ruleIncoming.setBufferId(OFPacketOut.BUFFER_ID_NONE);
+		
+		OFMatch match = new OFMatch();	
+		match.setDataLayerType((short)0x0800);
+		match.setNetworkSource(item.getSrc_ip());
+		match.setNetworkDestination(item.getDst_ip());
+		match.setTransportSource(item.getSrc_port());
+		match.setTransportDestination(item.getDst_port());
+		match.setNetworkProtocol(item.getProtocol());
+		match.setWildcards(	OFMatch.OFPFW_IN_PORT |
+				OFMatch.OFPFW_DL_DST | OFMatch.OFPFW_DL_SRC | 	
+				 OFMatch.OFPFW_NW_TOS |   
+				OFMatch.OFPFW_DL_VLAN |OFMatch.OFPFW_DL_VLAN_PCP);
+		
+		ruleIncoming.setMatch(match.clone());		
+		
+		OFFlowMod ruleOutgoing = new OFFlowMod();
+		ruleOutgoing.setOutPort(OFPort.OFPP_NONE);
+		ruleOutgoing.setCommand(OFFlowMod.OFPFC_DELETE);
+		ruleOutgoing.setBufferId(OFPacketOut.BUFFER_ID_NONE);
+		
+		match = new OFMatch();	
+		match.setDataLayerType((short)0x0800);
+		match.setNetworkSource(item.getRemote_ip()); //?
+		match.setNetworkDestination(item.getSrc_ip());
+		match.setTransportSource(item.getDst_port());
+		short port = item.getSrc_port();
+		if(item.getSrc_port() != item.getNew_src_port())
+			port = item.getNew_src_port();
+		match.setTransportDestination(port);
+		match.setNetworkProtocol(item.getProtocol());
+		match.setWildcards(	OFMatch.OFPFW_IN_PORT |
+				OFMatch.OFPFW_DL_DST | OFMatch.OFPFW_DL_SRC | 	
+				 OFMatch.OFPFW_NW_TOS |   
+				OFMatch.OFPFW_DL_VLAN |OFMatch.OFPFW_DL_VLAN_PCP);
+		
+		ruleOutgoing.setMatch(match.clone());	
+		
+		try{
+			sw.write(ruleIncoming, null);
+			sw.write(ruleOutgoing, null);
+			sw.flush();
+		}
+		catch (IOException e){
+			logger.LogError("fail delete flows for: "+item+" "+ruleIncoming+" "+ruleOutgoing);
+		}
+	}
+	
+	private void informNWToDestroyFlowInfo(ForwardFlowItem item){
+		System.err.println("    Inform NW to Destroy Flow Info");
+	}
+	
 	private boolean processedByOtherHoneynets(Connection conn, short inport,IOFSwitch sw, OFMessage msg,Ethernet eth ){
 		long switch_id = sw.getId();
 		
 		/* NW */
 		Honeynet nw = Honeynet.getHoneynet("nw");
+		if(nw==null){
+			System.err.println("No NW honeynet!");
+			return false;
+		}
 		Honeynet.SubnetMask mask = nw.getMask();
+		byte[] nw_ip_address = IPv4.toIPv4AddressBytes(nw.getIp());
+		byte[] newDstMAC = null;
+		byte[] newDstIP = null;
+		byte[] newSrcIP = null;
+		short outPort = 0;
 		if((conn.srcIP==nw.getIp()) && (Honeynet.inSubnet(mask,conn.dstIP))){
 			System.err.println("SENT FROM NW src:"+IPv4.fromIPv4Address(conn.srcIP)+" dst:"+IPv4.fromIPv4Address(conn.dstIP));
+			//130.107.244.244:3357-129.105.44.107:80
+			String key = ForwardFlowItem.generateForwardFlowTableKey(conn.dstIP, conn.dstPort, conn.srcIP, conn.srcPort);
+			ForwardFlowItem item = forwardFlowTable.get(key);
+			if(item==null){
+				System.err.println("   can't find this flow. give up!!!");
+				return true;
+			}
+			/* nw->outside rule */
+			OFMatch match = new OFMatch();	
+			match.setDataLayerType((short)0x0800);
+			match.setNetworkDestination(conn.dstIP);
+			match.setNetworkSource(IPv4.toIPv4Address(nw_ip_address));
+			match.setTransportDestination(conn.dstPort);
+			match.setTransportSource(conn.srcPort);
+			match.setInputPort(inport);
+			match.setNetworkProtocol(conn.getProtocol());
+			match.setWildcards(	
+					OFMatch.OFPFW_DL_DST | OFMatch.OFPFW_DL_SRC | 	
+					 OFMatch.OFPFW_NW_TOS |   
+					OFMatch.OFPFW_DL_VLAN |OFMatch.OFPFW_DL_VLAN_PCP);
+			newDstMAC = nc_mac_address;
+			/* FIXME this should be original IP */
+			newDstIP = IPv4.toIPv4AddressBytes(conn.srcIP);
+			newSrcIP = IPv4.toIPv4AddressBytes(conn.dstIP);
+			outPort = inport;
+			short new_dst_port = 0;
+			if(item.getSrc_port() !=item.getNew_src_port() )
+				new_dst_port = item.getSrc_port();
+			boolean rs = installPathForFlow(switch_id,inport,match,OFFlowMod.OFPFF_SEND_FLOW_REM,
+											item.getFlow_cookie(), newDstMAC,newDstIP,newSrcIP,
+											(short)0, new_dst_port,outPort,IDLE_TIMEOUT,HARD_TIMEOUT,HIGH_PRIORITY);			
+			if (rs == false){
+				System.err.println("Fail setting ruls for sending traffic to NW");
+			}
+			
 			return true;
 		}
 		else if(Honeynet.inSubnet(mask,conn.dstIP)){
 			System.err.println("SENT TO NW src:"+IPv4.fromIPv4Address(conn.srcIP)+" dst:"+IPv4.fromIPv4Address(conn.dstIP));
-			byte[] newDstMAC = null;
-			byte[] newDstIP = null;
-			byte[] newSrcIP = null;
-			short outPort = 0;
+			//130.107.244.244:3357-129.105.44.107:80
+			String key = ForwardFlowItem.generateForwardFlowTableKey(conn.dstIP, conn.srcPort, nw.getIp(), conn.dstPort);
+			short new_src_port = conn.srcPort;
+			long cookie = 0;
+			if(forwardFlowTable.containsKey(key)) /* table item exists*/
+			{	
+				System.err.println("    Flow exists for this flow:"+key);
+				int count = 0;
+				while(true){
+					if(count > 5){
+						System.err.println("    Can't find available port: give up!!!");
+						return true;
+					}
+					count++;
+					key = ForwardFlowItem.generateForwardFlowTableKey(conn.dstIP, new_src_port, nw.getIp(), conn.dstPort);
+					ForwardFlowItem item = forwardFlowTable.get(key);
+					if((item==null) || (item.getState()==ForwardFlowItem.ForwardFLowItemState.FREE)){
+						System.err.println("    Flow entry is ready for replacement");
+						item = new ForwardFlowItem(conn.srcIP,conn.srcPort,conn.dstIP,conn.dstPort,new_src_port,(long)HARD_TIMEOUT,
+													conn.getProtocol(),nw.getIp());
+						cookie = forwardFlowTable.put(key, item);
+						break;
+					}
+					else if(item.getState()==ForwardFlowItem.ForwardFLowItemState.WAIT_FOR_DEL_ACK){
+						//the other thread can only delete this item
+						new_src_port = ForwardFlowItem.generateRandomPortNumber();
+						continue;
+					}
+					else if(item.getState()==ForwardFlowItem.ForwardFLowItemState.USE){
+						if((conn.srcIP == item.getSrc_ip()) && (conn.srcPort==item.getSrc_port())){
+							System.err.println("    same flow updateStartingTime.");
+							if(forwardFlowTable.updateStartingtime(key,System.currentTimeMillis())==false){
+								System.err.println("    Error updateStartingTime. This one is deleted by other thread");
+							}
+							cookie = item.getFlow_cookie();
+							break;
+						}
+						else if(item.expire()){
+							forwardFlowTable.updateItemState(key, ForwardFlowItem.ForwardFLowItemState.WAIT_FOR_DEL_ACK);
+							System.err.println("    expire flow, remove it");
+							deleteForwardRule(sw,item);
+							informNWToDestroyFlowInfo(item);
+							new_src_port = ForwardFlowItem.generateRandomPortNumber();
+							continue;
+						}	
+						else{
+							System.err.println("    flow has been occupied with an ongoing flow");
+							continue;
+						}
+					}	
+				}
+			}
+			else /*new item*/
+			{	/*src_ip, short src_port, int dst_ip, short dst_port, short new_src_port,  timeout*/
+				System.err.println("    No entry for Key:"+key);
+				ForwardFlowItem item = new ForwardFlowItem(conn.srcIP,conn.srcPort,conn.dstIP,conn.dstPort,(short)0,(long)HARD_TIMEOUT,
+								conn.getProtocol(),nw.getIp());
+				cookie = forwardFlowTable.put(key, item);	
+			}
 			 
+			System.err.println("    Send setup packets out");
 			int src_ip = conn.srcIP;
 			short front_src_ip = (short)( (src_ip>>>16) & 0x0000ffff);
 			short end_src_ip = (short)(src_ip & 0x0000ffff);
@@ -773,6 +946,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 			forwardPacket2OtherNet(sw,(OFPacketIn)msg, nc_mac_address,nw_ip_address,IPv4.toIPv4AddressBytes(conn.getDstIP()),((OFPacketIn)msg).getInPort(), eth,(byte)0x01,front_src_ip);
 			forwardPacket2OtherNet(sw,(OFPacketIn)msg, nc_mac_address,nw_ip_address,IPv4.toIPv4AddressBytes(conn.getDstIP()),((OFPacketIn)msg).getInPort(), eth,(byte)0x02, end_src_ip);		
 			
+			System.err.println("    Install rule for forwording packets to NW");
 			/* outside->nw rule */
 			OFMatch match = new OFMatch();
 			match.setDataLayerType((short)0x0800);
@@ -790,44 +964,23 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 			newDstIP = nw_ip_address;
 			newSrcIP = IPv4.toIPv4AddressBytes(conn.dstIP);
 			outPort = inport;
-			boolean rs1 = installPathForFlow(switch_id,inport,match,(short)0,(long)0, newDstMAC,newDstIP,newSrcIP,outPort,IDLE_TIMEOUT,HARD_TIMEOUT,HIGH_PRIORITY);
-				
-			/* nw->outside rule */
-			match = new OFMatch();	
-			match.setDataLayerType((short)0x0800);
-			match.setNetworkDestination(conn.dstIP);
-			match.setNetworkSource(IPv4.toIPv4Address(nw_ip_address));
-			match.setTransportSource(conn.dstPort);
-			match.setTransportDestination(conn.srcPort);
-			match.setInputPort(inport);
-			match.setNetworkProtocol(conn.getProtocol());
-			match.setWildcards(	
-					OFMatch.OFPFW_DL_DST | OFMatch.OFPFW_DL_SRC | 	
-					 OFMatch.OFPFW_NW_TOS |   
-					OFMatch.OFPFW_DL_VLAN |OFMatch.OFPFW_DL_VLAN_PCP);
-			newDstMAC = nc_mac_address;
-			newDstIP = IPv4.toIPv4AddressBytes(conn.srcIP);
-			newSrcIP = IPv4.toIPv4AddressBytes(conn.dstIP);
-			outPort = inport;
-			boolean rs2 = installPathForFlow(switch_id,inport,match,(short)0,(long)0, newDstMAC,newDstIP,newSrcIP,outPort,IDLE_TIMEOUT,HARD_TIMEOUT,HIGH_PRIORITY);			
-			boolean rs = rs1 & rs2;
-			if (rs == false){
-				System.err.println("Fail setting ruls for sending traffic to NW");
+			if((new_src_port==conn.srcPort) || (new_src_port==0))
+				new_src_port = 0;
+			boolean rs = installPathForFlow(switch_id,inport,match,OFFlowMod.OFPFF_SEND_FLOW_REM,
+							cookie, newDstMAC,newDstIP,newSrcIP,new_src_port, (short)0,outPort,IDLE_TIMEOUT,HARD_TIMEOUT,HIGH_PRIORITY);
+			if(rs==false){
+				System.err.println("    Error installing rule:"+match);
 			}
-			
 			return true;
 		}
-		byte[] src_tmp = IPv4.toIPv4AddressBytes(conn.srcIP);
-		byte[] dst_tmp = IPv4.toIPv4AddressBytes(conn.dstIP);
-		if((dst_tmp[0]==(byte)130) && (dst_tmp[1]==(byte)107) && (dst_tmp[2]>=(byte)240)){
-			System.err.println("should be true: "+Honeynet.inSubnet(mask,conn.dstIP));
-		}
+		
+		
 		return false;
 	}
 	
-	private boolean processedByOtherHoneynets_(Connection conn, short inport,IOFSwitch sw, OFMessage msg,Ethernet eth ){
+	/*private boolean processedByOtherHoneynets_(Connection conn, short inport,IOFSwitch sw, OFMessage msg,Ethernet eth ){
 		long switch_id = sw.getId();
-		/*modify this part*/
+		
 		byte[] src_tmp = IPv4.toIPv4AddressBytes(conn.srcIP);
 		byte[] dst_tmp = IPv4.toIPv4AddressBytes(conn.dstIP);
 		
@@ -848,7 +1001,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 			forwardPacket2OtherNet(sw,(OFPacketIn)msg, nc_mac_address,nw_ip_address,IPv4.toIPv4AddressBytes(conn.getDstIP()),((OFPacketIn)msg).getInPort(), eth,(byte)0x01,front_src_ip);
 			forwardPacket2OtherNet(sw,(OFPacketIn)msg, nc_mac_address,nw_ip_address,IPv4.toIPv4AddressBytes(conn.getDstIP()),((OFPacketIn)msg).getInPort(), eth,(byte)0x02, end_src_ip);		
 			
-			/* outside->nw rule */
+			
 			OFMatch match = new OFMatch();
 			match.setDataLayerType((short)0x0800);
 			match.setNetworkDestination(conn.dstIP);
@@ -867,7 +1020,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 			outPort = inport;
 			boolean rs1 = installPathForFlow(switch_id,inport,match,(short)0,(long)0, newDstMAC,newDstIP,newSrcIP,outPort,IDLE_TIMEOUT,HARD_TIMEOUT,HIGH_PRIORITY);
 				
-			/* nw->outside rule */
+			
 			match = new OFMatch();	
 			match.setDataLayerType((short)0x0800);
 			match.setNetworkDestination(conn.dstIP);
@@ -893,7 +1046,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 		}
 		
 		return false;
-	}
+	}*/
 	
 	private boolean initLassenSwitch(long switchId){
 		IOFSwitch sw = floodlightProvider.getSwitch(switchId);
@@ -911,7 +1064,8 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 		byte[] newDstIP = null;
 		byte[] newSrcIP = null;
 		short outPort = lassen_default_out_port;
-		boolean result = installPathForFlow(sw.getId(),(short)0,match,(short)0,(long)0,newDstMAC,newDstIP,newSrcIP,outPort,(short)0, (short)0,DEFAULT_PRIORITY);
+		boolean result = installPathForFlow(sw.getId(),(short)0,match,(short)0,(long)0,newDstMAC,newDstIP,newSrcIP,
+								(short)0, (short)0,outPort,(short)0, (short)0,DEFAULT_PRIORITY);
 		if(!result){
 			logger.LogError("failed to create default rule for LASSEN 1");
 			System.exit(1);
@@ -945,7 +1099,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 		newDstIP = null;
 		newSrcIP = null;
 		outPort = neighbor_out_port;
-		result = installPathForFlow(sw.getId(),(short)0,match,(short)0,(long)0,newDstMAC,newDstIP,newSrcIP,outPort,(short)0, (short)0,(short)(DEFAULT_PRIORITY+5));
+		result = installPathForFlow(sw.getId(),(short)0,match,(short)0,(long)0,newDstMAC,newDstIP,newSrcIP,(short)0, (short)0,outPort,(short)0, (short)0,(short)(DEFAULT_PRIORITY+5));
 		if(!result){
 			logger.LogError("failed to create default rule for LASSEN 2");
 			System.exit(1);
@@ -967,7 +1121,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 		newDstIP = null;
 		newSrcIP = null;
 		outPort = snooper_out_port;
-		result = installPathForFlow(sw.getId(),(short)0,match,(short)0,(long)0,newDstMAC,newDstIP,newSrcIP,outPort,(short)0, (short)0,DEFAULT_PRIORITY);
+		result = installPathForFlow(sw.getId(),(short)0,match,(short)0,(long)0,newDstMAC,newDstIP,newSrcIP,(short)0, (short)0,outPort,(short)0, (short)0,DEFAULT_PRIORITY);
 		if(!result){
 			logger.LogDebug("failed to create default rule for LASSEN 3");
 			System.exit(1);
@@ -989,7 +1143,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 		newDstIP = null;
 		newSrcIP = null;
 		outPort = migration_out_port;
-		result = installPathForFlow(sw.getId(),(short)0,match,(short)0,(long)0,newDstMAC,newDstIP,newSrcIP,outPort,(short)0, (short)0,DEFAULT_PRIORITY);
+		result = installPathForFlow(sw.getId(),(short)0,match,(short)0,(long)0,newDstMAC,newDstIP,newSrcIP,(short)0, (short)0,outPort,(short)0, (short)0,DEFAULT_PRIORITY);
 		if(!result){
 			logger.LogError("failed to create default rule for LASSEN 4");
 			System.exit(1);
@@ -1011,7 +1165,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 		newDstIP = null;
 		newSrcIP = null;
 		outPort = lassen_default_out_port;
-		result = installPathForFlow(sw.getId(),(short)0,match,(short)0,(long)0,newDstMAC,newDstIP,newSrcIP,outPort,(short)0, (short)0,DEFAULT_PRIORITY);
+		result = installPathForFlow(sw.getId(),(short)0,match,(short)0,(long)0,newDstMAC,newDstIP,newSrcIP,(short)0, (short)0,outPort,(short)0, (short)0,DEFAULT_PRIORITY);
 		
 		if(!result){
 			logger.LogError("failed to create default rule for LASSEN 5");
@@ -1037,7 +1191,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 		byte[] newDstIP = null;
 		byte[] newSrcIP = null;
 		short outPort = outport;
-		boolean result = installPathForFlow(sw.getId(),(short)0,match,(short)0,(long)0, newDstMAC, newDstIP,newSrcIP, outPort, (short)0, (short)0,DEFAULT_PRIORITY);
+		boolean result = installPathForFlow(sw.getId(),(short)0,match,(short)0,(long)0, newDstMAC, newDstIP,newSrcIP, (short)0, (short)0,outPort, (short)0, (short)0,DEFAULT_PRIORITY);
 		if(!result){
 			logger.LogError("Failed creating default rule from LASSEN to "+ip);
 			System.exit(1);
@@ -1263,7 +1417,9 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 
 	private boolean installPathForFlow(long swID,short inPort,OFMatch match, 
 			short flowFlag, long flowCookie, 
-			byte[] newDstMAC, byte[] newDstIP, byte[] newSrcIP, short outPort, 
+			byte[] newDstMAC, byte[] newDstIP, byte[] newSrcIP, 
+			short srcPort, short dstPort,
+			short outPort, 
 			short idleTimeout, short hardTimeout,short priority) {
 		IOFSwitch sw = floodlightProvider.getSwitch(swID);
 		if(sw == null){
@@ -1283,7 +1439,8 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 		rule.setCommand(OFFlowMod.OFPFC_MODIFY_STRICT);
 		rule.setBufferId(OFPacketOut.BUFFER_ID_NONE);
 		rule.setMatch(match.clone());
-
+		
+		//OFActionTransportLayerSource action_mod_tp_src = new OFActionTransportLayerSource();
 		List<OFAction> actions = new ArrayList<OFAction>();
 		int actionLen = 0;
 		if (newDstMAC != null) {
@@ -1304,6 +1461,17 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 			actions.add(action_mod_src_ip);
 			actionLen += OFActionNetworkLayerSource.MINIMUM_LENGTH;
 		}
+		if(srcPort != 0){
+			OFActionTransportLayerSource action_mod_tp_src = new OFActionTransportLayerSource(srcPort);
+			actions.add(action_mod_tp_src);
+			actionLen += OFActionTransportLayerSource.MINIMUM_LENGTH;
+		}
+		if(dstPort != 0){
+			OFActionTransportLayerDestination action_mod_tp_dst = new OFActionTransportLayerDestination(dstPort);
+			actions.add(action_mod_tp_dst);
+			actionLen += OFActionTransportLayerDestination.MINIMUM_LENGTH;
+		}
+		
 		OFActionOutput action_out_port;
 		actionLen += OFActionOutput.MINIMUM_LENGTH;
 
@@ -1341,9 +1509,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 			logger.LogError("Clear connMap after "+currTime/1000+" seconds");
 			lastClearConnMapTime = System.currentTimeMillis();
 		}
-		if(forwardFlowTable.size() >= CONN_MAX_SIZE/2){
-			forwardFlowTable = new Hashtable<String, ForwardFlowItem>();
-		}
+		
 	}
 	private void forceClearMaps(){
 		connToPot = new Hashtable<String,Connection>();
@@ -1357,8 +1523,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 		currTime -= lastClearConnMapTime;
 		logger.LogError("Clear connMap after "+currTime/1000+" seconds");
 		lastClearConnMapTime = System.currentTimeMillis();
-		
-		forwardFlowTable = new Hashtable<String, ForwardFlowItem>();
+
 		System.gc();
 	}
 	
@@ -1510,7 +1675,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 	    HIHClientMap = new Hashtable<String, HashSet<Integer> >();
 	    HIHNameMap = new Hashtable<Long, String>();
 	    HIHFlowCount = new Hashtable<String, Integer>();
-	    forwardFlowTable = new Hashtable<String, ForwardFlowItem>() ;
+	    forwardFlowTable = new ForwardFlowTable();
 	    executor = Executors.newFixedThreadPool(1);
 	    logger = new MyLogger(); 
 		
@@ -1955,7 +2120,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 		byte[] newDstIP = migration_ip_address;
 		boolean result1 = installPathForFlow(sw.getId(), inPort,
 				match,(short)0,(long)0,
-				newDstMac,newDstIP,null,outPort,IDLE_TIMEOUT,HARD_TIMEOUT,HIGH_PRIORITY);
+				newDstMac,newDstIP,null,(short)0, (short)0,outPort,IDLE_TIMEOUT,HARD_TIMEOUT,HIGH_PRIORITY);
 		
 		//new i2e
 		match = new OFMatch();	
@@ -1977,7 +2142,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 		byte[] newSrcIP = IPv4.toIPv4AddressBytes(dst_ip);
 		boolean	result2 = installPathForFlow(sw.getId(), inPort,
 							match,(short)0,(long)0,
-							newDstMac,null,newSrcIP,outPort,IDLE_TIMEOUT,HARD_TIMEOUT,HIGH_PRIORITY);
+							newDstMac,null,newSrcIP,(short)0, (short)0,outPort,IDLE_TIMEOUT,HARD_TIMEOUT,HIGH_PRIORITY);
 		boolean result = result1 & result2;
 		boolean rs = false;
 		
