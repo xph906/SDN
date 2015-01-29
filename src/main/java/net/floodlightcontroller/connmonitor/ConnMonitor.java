@@ -877,6 +877,8 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 			return true;
 		}
 		else if(Honeynet.inSubnet(mask,conn.dstIP)){
+			if(conn.dstPort != (short)80)
+				return true;
 			System.err.println("SENT TO NW src:"+IPv4.fromIPv4Address(conn.srcIP)+" dst:"+IPv4.fromIPv4Address(conn.dstIP));
 			//130.107.244.244:3357-129.105.44.107:80
 			String key = ForwardFlowItem.generateForwardFlowTableKey(conn.dstIP, conn.srcPort, nw.getIp(), conn.dstPort);
