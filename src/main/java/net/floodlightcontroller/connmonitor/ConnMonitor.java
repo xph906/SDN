@@ -861,7 +861,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 					OFMatch.OFPFW_DL_VLAN |OFMatch.OFPFW_DL_VLAN_PCP);
 			newDstMAC = nc_mac_address;
 			/* FIXME this should be original IP */
-			newDstIP = IPv4.toIPv4AddressBytes(conn.srcIP);
+			newDstIP = IPv4.toIPv4AddressBytes(item.getSrc_ip());
 			newSrcIP = IPv4.toIPv4AddressBytes(conn.dstIP);
 			outPort = inport;
 			short new_dst_port = 0;
