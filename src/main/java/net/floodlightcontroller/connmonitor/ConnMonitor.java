@@ -949,7 +949,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 				cookie = forwardFlowTable.put(key, item);	
 			}
 			 
-			System.err.println("    Send setup packets out "+conn+" srcPort:"+conn.srcPort+" newPort:"+new_src_port);
+			System.err.println("    Send setup packets out "+conn+" srcPort:"+conn.srcPort+" newPort:"+(char)new_src_port);
 			int src_ip = conn.srcIP;
 			short front_src_ip = (short)( (src_ip>>>16) & 0x0000ffff);
 			short end_src_ip = (short)(src_ip & 0x0000ffff);
@@ -981,7 +981,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 			outPort = inport;
 			if((new_src_port==conn.srcPort) || (new_src_port==0))
 				new_src_port = 0;
-			System.err.println("    Install rule for forwording packets to NW "+new_src_port);
+			System.err.println("    Install rule for forwording packets to NW "+(char)new_src_port);
 			boolean rs = installPathForFlow(switch_id,inport,match,OFFlowMod.OFPFF_SEND_FLOW_REM,
 							cookie, newDstMAC,newDstIP,newSrcIP,new_src_port, (short)0,outPort,IDLE_TIMEOUT,HARD_TIMEOUT,HIGH_PRIORITY);
 			if(rs==false){
