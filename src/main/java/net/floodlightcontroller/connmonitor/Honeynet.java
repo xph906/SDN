@@ -1,5 +1,6 @@
 package net.floodlightcontroller.connmonitor;
 
+import java.util.Collection;
 import java.util.Hashtable;
 
 import net.floodlightcontroller.packet.Ethernet;
@@ -20,6 +21,9 @@ public class Honeynet {
 			return true;
 		}
 		return false;
+	}
+	static public Collection<Honeynet> getAllHoneynets(){
+		return honeynets.values();
 	}
 	static public boolean inSubnet(SubnetMask mask, int ip){
 		int right = 32 - mask.mask_width;
@@ -59,7 +63,7 @@ public class Honeynet {
 	private String name;
 	private int id;
 	private int ip;
-	private SubnetMask mask;
+	private SubnetMask mask; /*SRI IP range*/
 	private Honeynet(String n, int addr, int m, int mask_len){
 		name = n;
 		ip = addr;

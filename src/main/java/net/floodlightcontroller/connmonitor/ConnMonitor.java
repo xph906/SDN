@@ -55,6 +55,7 @@ import org.openflow.protocol.statistics.OFStatistics;
 import org.openflow.protocol.statistics.OFStatisticsType;
 import org.openflow.util.HexString;
 
+import net.floodlightcontroller.connmonitor.ForwardFlowItem.ForwardFLowItemState;
 import net.floodlightcontroller.core.FloodlightContext;
 import net.floodlightcontroller.core.IFloodlightProviderService;
 import net.floodlightcontroller.core.IOFMessageListener;
@@ -543,15 +544,44 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 			IOFSwitch sw, OFMessage msg, FloodlightContext cntx){
 		if(msg instanceof OFFlowRemoved){
 			OFFlowRemoved removedMsg = (OFFlowRemoved)msg;
-			/*	Add codes here to detect ForwardFlow gets removed 
-			 * 	remember to update cookie_key_map, table and send request to NW
-			 */
-
-			
 			if(removedMsg.getReason()==OFFlowRemoved.OFFlowRemovedReason.OFPRR_DELETE){
 				return Command.CONTINUE;
 			}
-			else if(removedMsg.getReason()==OFFlowRemoved.OFFlowRemovedReason.OFPRR_HARD_TIMEOUT){
+			/*	
+			 *  Add codes here to detect ForwardFlow gets removed 
+			 * 	remember to update cookie_key_map, table and send request to NW
+			 */
+			int dstIP = removedMsg.getMatch().getNetworkDestination();
+			int srcIP = removedMsg.getMatch().getNetworkSource();
+			for(Honeynet net : Honeynet.getAllHoneynets()){
+				
+				String name = net.getName();
+				Honeynet.SubnetMask mask = net.getMask();
+				System.err.println("remove flows: test for honeynet "+name+" mask:"+mask);
+				if(Honeynet.inSubnet(mask, dstIP) || Honeynet.inSubnet(mask, srcIP) ){
+					long cookie = removedMsg.getCookie();
+					System.err.println("  remove flows: flow belonging to "+name+" with cookie:"+cookie);
+					String key = forwardFlowTable.fromCookieToKey(cookie);
+					if(key == null){
+						System.err.println("    the item has already been removed from forwardFlowTable");
+						return Command.CONTINUE;
+					}
+					forwardFlowTable.removeCookieStringMap(cookie);
+					ForwardFlowItem item = forwardFlowTable.get(key);
+					if(item == null){
+						System.err.println("    can't find this item from forwardFlowTable");
+						return Command.CONTINUE;
+					}
+					item.setState(ForwardFLowItemState.WAIT_FOR_DEL_ACK);
+					deleteForwardRule(sw,item);
+					informNWToDestroyFlowInfo(item);
+					System.err.println("    done handling forward rules removed msg "+cookie);
+					return Command.CONTINUE;
+				}
+			}
+			
+			
+			if(removedMsg.getReason()==OFFlowRemoved.OFFlowRemovedReason.OFPRR_HARD_TIMEOUT){
 				logger.LogDebug("TODO: FlowRemovedMsgHandler handle OFPRR_HARD_TIMEOUT");
 				return Command.CONTINUE;
 			}
