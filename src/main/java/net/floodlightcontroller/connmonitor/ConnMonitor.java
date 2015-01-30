@@ -1380,8 +1380,8 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 	    				/* clear TCP checksum */
 	    				byte[] tcp_pkt_data = Arrays.copyOfRange(ip_pkt_data,
 	    						ip_header_len,ip_len);
-	    				short checksum = (short)(tcp_pkt_data[16] & 0xff);
-	    				short tmp = (short)(tcp_pkt_data[17] & 0xff);
+	    				short checksum = (short)(tcp_pkt_data[17] & 0xff);
+	    				short tmp = (short)(tcp_pkt_data[16] & 0xff);
 	    				tmp <<= 8;
 	    				checksum |= tmp;
 	    				System.err.println("    TCP original checksum:"+checksum);
