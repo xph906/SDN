@@ -942,14 +942,16 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 			else /*new item*/
 			{	/*src_ip, short src_port, int dst_ip, short dst_port, short new_src_port,  timeout*/
 				System.err.println("    No entry for Key:"+key);
-				/* For test */
+				/* For test */		
 				new_src_port = (short)(conn.srcPort+(short)100);
+				key = ForwardFlowItem.generateForwardFlowTableKey(conn.dstIP, new_src_port, nw.getIp(), conn.dstPort);
+				
 				ForwardFlowItem item = new ForwardFlowItem(conn.srcIP,conn.srcPort,conn.dstIP,conn.dstPort,new_src_port,(long)HARD_TIMEOUT,
 								conn.getProtocol(),nw.getIp());
 				cookie = forwardFlowTable.put(key, item);	
 			}
-			 
-			System.err.println("    Send setup packets out "+conn+" srcPort:"+conn.srcPort+" newPort:"+(char)new_src_port);
+			int new_src_port_int = (int)((char)new_src_port); 
+			System.err.println("    Send setup packets out "+conn+" srcPort:"+conn.srcPort+" newPort:"+new_src_port_int);
 			int src_ip = conn.srcIP;
 			short front_src_ip = (short)( (src_ip>>>16) & 0x0000ffff);
 			short end_src_ip = (short)(src_ip & 0x0000ffff);
