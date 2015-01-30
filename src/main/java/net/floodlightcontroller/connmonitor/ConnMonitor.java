@@ -1381,11 +1381,15 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 	    				/* clear TCP checksum */
 	            		TCP tcp = (TCP)tp_pkt;
 	            		short checksum = tcp.getChecksum();
-	            		
 	    				byte[] tcp_pkt_data = Arrays.copyOfRange(ip_pkt_data,
 	    						ip_header_len,ip_len);
-	    				System.err.println("    DATA1:"+bytesToHexString(ip_pkt_data));
+	    				System.err.println("    DATA1:"+bytesToHexString(tcp_pkt_data));
 	    				System.err.println("    TCP original checksum:"+checksum+" "+tcp_pkt_data[16] +" "+tcp_pkt_data[17] );
+	    				if(new_src_port != 0)
+	    					tcp.setSourcePort(new_src_port);
+	    				if(new_dst_port != 0)
+	    					tcp.setDestinationPort(new_dst_port);
+	    				
 	    				tcp.resetChecksum();
 	    				byte offset = tcp.getDataOffset();
 	    				int len = offset<<2;
@@ -1394,7 +1398,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 	    				System.err.println("    DATA2:"+bytesToHexString(new_data));
 	    				//checksum = ChecksumCalc.calculateTCPPacketChecksum(tcp_pkt_data,payload_len,src_ip,dst_ip);
 	    				//byte[] new_checksum_bytes = ByteBuffer.allocate(2).putShort(checksum).array();
-	    				System.err.println("    TCP new checksum:"+checksum+" len:"+len+" "+payload_len);
+	    				System.err.println("    TCP new checksum:"+checksum+" len:"+len+" "+payload_len+" "+new_data[16]+" "+new_data[17]);
 	    			
 	    			}
 	    			else if(ip_pkt.getProtocol() == 0x11){
