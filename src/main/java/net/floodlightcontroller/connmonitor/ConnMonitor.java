@@ -1376,14 +1376,25 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
             	
             	if((new_src_port!=0) || (new_dst_port!=0)){
             		System.err.println("  DEBUG Modify TP");
-	            	if(ip_pkt.getProtocol() == 0x06){
+            		IPacket tp_pkt = ip_pkt.getPayload();
+	            	if(tp_pkt instanceof TCP){
 	    				/* clear TCP checksum */
+	            		TCP tcp = (TCP)tp_pkt;
+	            		short checksum = tcp.getChecksum();
+	            		
 	    				byte[] tcp_pkt_data = Arrays.copyOfRange(ip_pkt_data,
 	    						ip_header_len,ip_len);
-	    				System.err.println("    TCP original checksum:"+tcp_pkt_data[16] +" "+tcp_pkt_data[17] );
-	    				short checksum = ChecksumCalc.calculateTCPPacketChecksum(tcp_pkt_data,payload_len,src_ip,dst_ip);
-	    				byte[] new_checksum_bytes = ByteBuffer.allocate(2).putShort(checksum).array();
-	    				System.err.println("    TCP new checksum:"+new_checksum_bytes[0]+" "+new_checksum_bytes[1]);
+	    				System.err.println("    DATA1:"+bytesToHexString(ip_pkt_data));
+	    				System.err.println("    TCP original checksum:"+checksum+" "+tcp_pkt_data[16] +" "+tcp_pkt_data[17] );
+	    				tcp.resetChecksum();
+	    				byte offset = tcp.getDataOffset();
+	    				int len = offset<<2;
+	    				checksum = tcp.getChecksum();
+	    				byte[] new_data = tcp.serialize();
+	    				System.err.println("    DATA2:"+bytesToHexString(new_data));
+	    				//checksum = ChecksumCalc.calculateTCPPacketChecksum(tcp_pkt_data,payload_len,src_ip,dst_ip);
+	    				//byte[] new_checksum_bytes = ByteBuffer.allocate(2).putShort(checksum).array();
+	    				System.err.println("    TCP new checksum:"+checksum+" len:"+len+" "+payload_len);
 	    			
 	    			}
 	    			else if(ip_pkt.getProtocol() == 0x11){
