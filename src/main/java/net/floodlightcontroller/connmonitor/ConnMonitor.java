@@ -1361,7 +1361,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
             
             int packet_len = packetData.length;
             int msg_len = pktInMsg.getLength();
-            IPacket pkt = eth.getPayload();
+            IPacket pkt  = eth.getPayload();
             
             if(pkt instanceof IPv4){
             	IPv4 ip_pkt = (IPv4)pkt;
@@ -1376,21 +1376,25 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
             	
             	if((new_src_port!=0) || (new_dst_port!=0)){
             		System.err.println("  DEBUG Modify TP");
-	            	if(pkt instanceof TCP){
-	            		TCP tcp = (TCP)pkt;
-	    				short checksum = tcp.getChecksum();
-	    				System.err.println("    TCP original checksum:"+checksum);
+	            	if(ip_pkt.getProtocol() == 0x06){
 	    				/* clear TCP checksum */
 	    				byte[] tcp_pkt_data = Arrays.copyOfRange(ip_pkt_data,
 	    						ip_header_len,ip_len);
+	    				short checksum = (short)(tcp_pkt_data[16] & 0xff);
+	    				short tmp = (short)(tcp_pkt_data[17] & 0xff);
+	    				tmp <<= 8;
+	    				checksum |= tmp;
+	    				System.err.println("    TCP original checksum:"+checksum);
 	    				checksum = ChecksumCalc.calculateTCPPacketChecksum(tcp_pkt_data,payload_len,src_ip,dst_ip);
 	    				System.err.println("    TCP new checksum:"+checksum);
 	    			
 	    			}
-	    			else if(pkt instanceof UDP){
-	    				UDP udp = (UDP)pkt;
-	    				short checksum = udp.getChecksum();
-	    				System.err.println("    UDP original checksum:"+checksum);
+	    			else if(ip_pkt.getProtocol() == 0x11){
+	    				
+	    				System.err.println("    UDP original checksum:");
+	    			}
+	    			else{
+	    				
 	    			}
             	}
             	
