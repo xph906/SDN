@@ -86,8 +86,8 @@ public class ChecksumCalc {
 		data[7] = dst_ip_bytes[3];
 		data[8] = 0x00;
 		data[9] = 0x06;
-		data[10] = length_bytes[1];
-		data[11] = length_bytes[0];
+		data[10] = length_bytes[0];
+		data[11] = length_bytes[1];
 		
 		for(int i=12,j=0; j<tcp_data.length; i++,j++)
 			data[i] = tcp_data[j];
