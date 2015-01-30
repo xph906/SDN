@@ -949,11 +949,10 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 				cookie = forwardFlowTable.put(key, item);	
 			}
 			 
-			System.err.println("    Send setup packets out");
+			System.err.println("    Send setup packets out "+conn+" srcPort:"+conn.srcPort+" newPort:"+new_src_port);
 			int src_ip = conn.srcIP;
 			short front_src_ip = (short)( (src_ip>>>16) & 0x0000ffff);
 			short end_src_ip = (short)(src_ip & 0x0000ffff);
-			System.err.println(conn);
 
 			forwardPacket2OtherNet(sw,(OFPacketIn)msg, nc_mac_address,nw_ip_address,
 					IPv4.toIPv4AddressBytes(conn.getDstIP()),((OFPacketIn)msg).getInPort(), 
@@ -1376,6 +1375,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
             				ChecksumCalc.ETHERNET_HEADER_LEN,ChecksumCalc.ETHERNET_HEADER_LEN + ip_len);
             	
             	if((new_src_port!=0) || (new_dst_port!=0)){
+            		System.err.println("  DEBUG Modify TP");
 	            	if(pkt instanceof TCP){
 	            		TCP tcp = (TCP)pkt;
 	    				short checksum = tcp.getChecksum();
