@@ -838,14 +838,16 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 		byte[] newSrcIP = null;
 		short outPort = 0;
 		if((conn.srcIP==nw.getIp()) && (Honeynet.inSubnet(mask,conn.dstIP))){
-			System.err.println("SENT FROM NW src:"+IPv4.fromIPv4Address(conn.srcIP)+" dst:"+IPv4.fromIPv4Address(conn.dstIP));
 			//130.107.244.244:3357-129.105.44.107:80
 			String key = ForwardFlowItem.generateForwardFlowTableKey(conn.dstIP, conn.dstPort, conn.srcIP, conn.srcPort);
+			System.err.println("SENT FROM NW src:"+IPv4.fromIPv4Address(conn.srcIP)+" dst:"+IPv4.fromIPv4Address(conn.dstIP) +" srcport:"+conn.srcPort+" dstport:"+conn.dstPort+" "+key);
+			
 			ForwardFlowItem item = forwardFlowTable.get(key);
 			if(item==null){
 				System.err.println("   can't find this flow. give up!!!");
 				return true;
 			}
+			System.err.println("    original src:"+IPv4.fromIPv4Address(item.getSrc_ip()));
 			/* nw->outside rule */
 			OFMatch match = new OFMatch();	
 			match.setDataLayerType((short)0x0800);
@@ -867,6 +869,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 			short new_dst_port = 0;
 			if(item.getSrc_port() !=item.getNew_src_port() )
 				new_dst_port = item.getSrc_port();
+			System.err.println("   new_dst_port:"+new_dst_port);
 			boolean rs = installPathForFlow(switch_id,inport,match,OFFlowMod.OFPFF_SEND_FLOW_REM,
 											item.getFlow_cookie(), newDstMAC,newDstIP,newSrcIP,
 											(short)0, new_dst_port,outPort,IDLE_TIMEOUT,HARD_TIMEOUT,HIGH_PRIORITY);			
