@@ -954,8 +954,13 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 			short front_src_ip = (short)( (src_ip>>>16) & 0x0000ffff);
 			short end_src_ip = (short)(src_ip & 0x0000ffff);
 			System.err.println(conn);
-			forwardPacket2OtherNet(sw,(OFPacketIn)msg, nc_mac_address,nw_ip_address,IPv4.toIPv4AddressBytes(conn.getDstIP()),((OFPacketIn)msg).getInPort(), eth,(byte)0x01,front_src_ip);
-			forwardPacket2OtherNet(sw,(OFPacketIn)msg, nc_mac_address,nw_ip_address,IPv4.toIPv4AddressBytes(conn.getDstIP()),((OFPacketIn)msg).getInPort(), eth,(byte)0x02, end_src_ip);		
+
+			forwardPacket2OtherNet(sw,(OFPacketIn)msg, nc_mac_address,nw_ip_address,
+					IPv4.toIPv4AddressBytes(conn.getDstIP()),((OFPacketIn)msg).getInPort(), 
+					eth,(byte)0x01,front_src_ip,(new_src_port==conn.srcPort)?(short)0:new_src_port,(short)0);
+			forwardPacket2OtherNet(sw,(OFPacketIn)msg, nc_mac_address,nw_ip_address,
+					IPv4.toIPv4AddressBytes(conn.getDstIP()),((OFPacketIn)msg).getInPort(), 
+					eth,(byte)0x02, end_src_ip,(new_src_port==conn.srcPort)?(short)0:new_src_port,(short)0);		
 			
 			
 			/* outside->nw rule */
@@ -1304,7 +1309,8 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 	}
 	
 	public boolean forwardPacket2OtherNet(IOFSwitch sw, OFPacketIn pktInMsg, 
-			byte[] dstMAC, byte[] destIP, byte[] srcIP, short outSwPort, Ethernet eth, byte dscp, short id) 
+			byte[] dstMAC, byte[] destIP, byte[] srcIP, short outSwPort, Ethernet eth, byte dscp, short id, 
+			short new_src_port, short new_dst_port) 
     {
         OFPacketOut pktOut = new OFPacketOut();        
         
@@ -1362,10 +1368,31 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
             	IPv4 ip_pkt = (IPv4)pkt;
             	int ip_len = ip_pkt.getTotalLength();
             	int ip_header_len = (ip_pkt.getHeaderLength() & 0x000000ff) * 4;
-            	
+            	short payload_len = (short)(ip_len - ip_header_len);
+            	int src_ip = ip_pkt.getSourceAddress();
+            	int dst_ip = ip_pkt.getDestinationAddress();
             	//System.err.println("msglen:"+msg_len+" packetlen:"+packet_len+" iplen:"+ip_len+" ip headerlen:"+ip_header_len);
             	byte[] ip_pkt_data = Arrays.copyOfRange(packetData,
             				ChecksumCalc.ETHERNET_HEADER_LEN,ChecksumCalc.ETHERNET_HEADER_LEN + ip_len);
+            	
+            	if((new_src_port!=0) || (new_dst_port!=0)){
+	            	if(pkt instanceof TCP){
+	            		TCP tcp = (TCP)pkt;
+	    				short checksum = tcp.getChecksum();
+	    				System.err.println("    TCP original checksum:"+checksum);
+	    				/* clear TCP checksum */
+	    				byte[] tcp_pkt_data = Arrays.copyOfRange(ip_pkt_data,
+	    						ip_header_len,ip_len);
+	    				checksum = ChecksumCalc.calculateTCPPacketChecksum(tcp_pkt_data,payload_len,src_ip,dst_ip);
+	    				System.err.println("    TCP new checksum:"+checksum);
+	    			
+	    			}
+	    			else if(pkt instanceof UDP){
+	    				UDP udp = (UDP)pkt;
+	    				short checksum = udp.getChecksum();
+	    				System.err.println("    UDP original checksum:"+checksum);
+	    			}
+            	}
             	
             	/* Modify DSCP */
             	byte ecn =  (byte)((int)(ip_pkt_data[1])&0x03);	

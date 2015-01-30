@@ -5,6 +5,7 @@ import java.nio.ByteBuffer;
 public class ChecksumCalc {
 	 public static final short ETHERNET_HEADER_LEN = 14;
 	 public static final short IP_CHECKSUM_INDEX = 10;
+	 public static final short TCP_CHECKSUM_INDEX = 16;
 	/**
 	 * Calculate the Internet Checksum of a buffer (RFC 1071 -
 	 * http://www.faqs.org/rfcs/rfc1071.html) Algorithm is 1) apply a 16-bit 1's
@@ -64,6 +65,38 @@ public class ChecksumCalc {
 		sum = ~sum;
 		sum = sum & 0xFFFF;
 		return (short)sum;
+	}
+	
+	static short calculateTCPPacketChecksum(byte[] tcp_data, short tcp_len, int src_ip, int dst_ip){
+		if(tcp_data == null)
+			return 0;
+		if(tcp_data.length < tcp_len)
+			return 0;
+		byte[] data = new byte[12+tcp_data.length];
+		byte[] src_ip_bytes = ByteBuffer.allocate(4).putInt(src_ip).array();
+		byte[] dst_ip_bytes = ByteBuffer.allocate(4).putInt(dst_ip).array();
+		byte[] length_bytes = ByteBuffer.allocate(2).putShort(tcp_len).array();
+		data[0] = src_ip_bytes[0];
+		data[1] = src_ip_bytes[1];
+		data[2] = src_ip_bytes[2];
+		data[3] = src_ip_bytes[3];
+		data[4] = dst_ip_bytes[0];
+		data[5] = dst_ip_bytes[1];
+		data[6] = dst_ip_bytes[2];
+		data[7] = dst_ip_bytes[3];
+		data[8] = 0x00;
+		data[8] = 0x06;
+		data[10] = length_bytes[0];
+		data[11] = length_bytes[1];
+		
+		for(int i=12,j=0; i<tcp_data.length; i++,j++)
+			data[i] = tcp_data[j];
+		
+		data[TCP_CHECKSUM_INDEX] = 0x00;
+		data[TCP_CHECKSUM_INDEX+1] = 0x00;
+		short rs = calculateIPChecksum(data,12+tcp_data.length);
+		return rs;
+		
 	}
 	
 	static boolean reCalcAndUpdateIPPacketChecksum(byte[] ip_data, int ip_header_len){
