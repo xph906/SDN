@@ -557,10 +557,10 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 				
 				String name = net.getName();
 				Honeynet.SubnetMask mask = net.getMask();
-				System.err.println("remove flows: test for honeynet "+name+" mask:"+mask);
+				System.err.println("remove flows: test for honeynet "+name+" mask:"+mask+" src_ip:"+IPv4.fromIPv4Address(srcIP)+" dst_ip:"+IPv4.fromIPv4Address(dstIP));
 				if(Honeynet.inSubnet(mask, dstIP) || Honeynet.inSubnet(mask, srcIP) ){
 					long cookie = removedMsg.getCookie();
-					System.err.println("  remove flows: flow belonging to "+name+" with cookie:"+cookie);
+					System.err.println("    remove flows: flow belonging to "+name+" with cookie:"+cookie);
 					String key = forwardFlowTable.fromCookieToKey(cookie);
 					if(key == null){
 						System.err.println("    the item has already been removed from forwardFlowTable");
@@ -851,7 +851,10 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 	private void informNWToDestroyFlowInfo(ForwardFlowItem item){
 		System.err.println("    Inform NW to Destroy Flow Info");
 	}
-	
+	private int positivePort(short port){
+		int rs = port & 0x0000ffff;
+		return rs;
+	}
 	private boolean processedByOtherHoneynets(Connection conn, short inport,IOFSwitch sw, OFMessage msg,Ethernet eth ){
 		long switch_id = sw.getId();
 		
@@ -870,11 +873,13 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 		if((conn.srcIP==nw.getIp()) && (Honeynet.inSubnet(mask,conn.dstIP))){
 			//130.107.244.244:3357-129.105.44.107:80
 			String key = ForwardFlowItem.generateForwardFlowTableKey(conn.dstIP, conn.dstPort, conn.srcIP, conn.srcPort);
-			System.err.println("SENT FROM NW src:"+IPv4.fromIPv4Address(conn.srcIP)+" dst:"+IPv4.fromIPv4Address(conn.dstIP) +" srcport:"+conn.srcPort+" dstport:"+conn.dstPort+" "+key);
+			System.err.println("SENT FROM NW src:"+IPv4.fromIPv4Address(conn.srcIP)+" dst:"+IPv4.fromIPv4Address(conn.dstIP) +
+								" flow srcport:"+positivePort(conn.srcPort) + 
+								" flow dstport:"+positivePort(conn.dstPort)+"\n    key:"+key);
 			
 			ForwardFlowItem item = forwardFlowTable.get(key);
 			if(item==null){
-				System.err.println("   can't find this flow. give up!!!");
+				System.err.println("    can't find this flow. give up!!!");
 				return true;
 			}
 			System.err.println("    original src:"+IPv4.fromIPv4Address(item.getSrc_ip()));
@@ -899,12 +904,12 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 			short new_dst_port = 0;
 			if(item.getSrc_port() !=item.getNew_src_port() )
 				new_dst_port = item.getSrc_port();
-			System.err.println("   new_dst_port:"+new_dst_port);
+			System.err.println("    new_dst_port:"+positivePort(new_dst_port));
 			boolean rs = installPathForFlow(switch_id,inport,match,OFFlowMod.OFPFF_SEND_FLOW_REM,
 											item.getFlow_cookie(), newDstMAC,newDstIP,newSrcIP,
 											(short)0, new_dst_port,outPort,IDLE_TIMEOUT,HARD_TIMEOUT,HIGH_PRIORITY);			
 			if (rs == false){
-				System.err.println("Fail setting ruls for sending traffic to NW");
+				System.err.println("    Fail setting ruls for sending traffic to NW");
 			}
 			
 			return true;
@@ -915,26 +920,27 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 			if((conn.dstPort != (short)80)|| (conn.dstIP != special_ip) )
 				return true;
 			
-			
-			System.err.println("SENT TO NW src:"+IPv4.fromIPv4Address(conn.srcIP)+" dst:"+IPv4.fromIPv4Address(conn.dstIP));
 			//130.107.244.244:3357-129.105.44.107:80
 			String key = ForwardFlowItem.generateForwardFlowTableKey(conn.dstIP, conn.srcPort, nw.getIp(), conn.dstPort);
+			System.err.println("SENT TO NW src:"+IPv4.fromIPv4Address(conn.srcIP)+" dst:"+IPv4.fromIPv4Address(conn.dstIP) +
+					" flow srcport:"+positivePort(conn.srcPort) + 
+					" flow dstport:"+positivePort(conn.dstPort)+"\n    key:"+key);
 			short new_src_port = conn.srcPort;
 			long cookie = 0;
 			if(forwardFlowTable.containsKey(key)) /* table item exists*/
 			{	
-				System.err.println("    Flow exists for this flow:"+key);
+				System.err.println("    entry exists for this flow:"+key);
 				int count = 0;
 				while(true){
 					if(count > 5){
-						System.err.println("    Can't find available port: give up!!!");
+						System.err.println("        can't find available port: give up!!!");
 						return true;
 					}
 					count++;
 					key = ForwardFlowItem.generateForwardFlowTableKey(conn.dstIP, new_src_port, nw.getIp(), conn.dstPort);
 					ForwardFlowItem item = forwardFlowTable.get(key);
 					if((item==null) || (item.getState()==ForwardFlowItem.ForwardFLowItemState.FREE)){
-						System.err.println("    Flow entry is ready for replacement");
+						System.err.println("        flow entry is ready for replacement");
 						item = new ForwardFlowItem(conn.srcIP,conn.srcPort,conn.dstIP,conn.dstPort,new_src_port,(long)HARD_TIMEOUT,
 													conn.getProtocol(),nw.getIp());
 						cookie = forwardFlowTable.put(key, item);
@@ -942,28 +948,31 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 					}
 					else if(item.getState()==ForwardFlowItem.ForwardFLowItemState.WAIT_FOR_DEL_ACK){
 						//the other thread can only delete this item
+						System.err.println("        flow entry is not ready for replacement: WAIT_FOR_DEL_ACK");
 						new_src_port = ForwardFlowItem.generateRandomPortNumber();
 						continue;
 					}
 					else if(item.getState()==ForwardFlowItem.ForwardFLowItemState.USE){
+						System.err.println("        flow entry is in USE");
 						if((conn.srcIP == item.getSrc_ip()) && (conn.srcPort==item.getSrc_port())){
-							System.err.println("    same flow updateStartingTime.");
+							System.err.println("            same flow, update StartingTime.");
 							if(forwardFlowTable.updateStartingtime(key,System.currentTimeMillis())==false){
-								System.err.println("    Error updateStartingTime. This one is deleted by other thread");
+								System.err.println("            error updateStartingTime. This one is deleted by other thread");
 							}
 							cookie = item.getFlow_cookie();
 							break;
 						}
 						else if(item.expire()){
 							forwardFlowTable.updateItemState(key, ForwardFlowItem.ForwardFLowItemState.WAIT_FOR_DEL_ACK);
-							System.err.println("    expire flow, remove it");
+							System.err.println("            not same flow, but expired, del it asynchronously");
 							deleteForwardRule(sw,item);
 							informNWToDestroyFlowInfo(item);
 							new_src_port = ForwardFlowItem.generateRandomPortNumber();
 							continue;
 						}	
 						else{
-							System.err.println("    flow has been occupied with an ongoing flow");
+							System.err.println("            not same flow, switch port");
+							new_src_port = ForwardFlowItem.generateRandomPortNumber();
 							continue;
 						}
 					}	
@@ -971,7 +980,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 			}
 			else /*new item*/
 			{	/*src_ip, short src_port, int dst_ip, short dst_port, short new_src_port,  timeout*/
-				System.err.println("    No entry for Key:"+key);
+				System.err.println("    no entry exists");
 				/* For test */		
 				new_src_port = (short)(conn.srcPort+(short)100);
 				key = ForwardFlowItem.generateForwardFlowTableKey(conn.dstIP, new_src_port, nw.getIp(), conn.dstPort);
@@ -980,8 +989,8 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 								conn.getProtocol(),nw.getIp());
 				cookie = forwardFlowTable.put(key, item);	
 			}
-			int new_src_port_int = (int)((char)new_src_port); 
-			System.err.println("    Send setup packets out "+conn+" srcPort:"+conn.srcPort+" newPort:"+new_src_port_int);
+			System.err.println("    send setup packets out "+conn+
+							"\n        flow srcPort:"+positivePort(conn.srcPort)+" new srcPort:"+positivePort(new_src_port));
 			int src_ip = conn.srcIP;
 			short front_src_ip = (short)( (src_ip>>>16) & 0x0000ffff);
 			short end_src_ip = (short)(src_ip & 0x0000ffff);
@@ -1013,11 +1022,11 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 			outPort = inport;
 			if((new_src_port==conn.srcPort) || (new_src_port==0))
 				new_src_port = 0;
-			System.err.println("    Install rule for forwording packets to NW "+(char)new_src_port);
+			System.err.println("    install rule for forwording packets to NW. Match:"+match);
 			boolean rs = installPathForFlow(switch_id,inport,match,OFFlowMod.OFPFF_SEND_FLOW_REM,
 							cookie, newDstMAC,newDstIP,newSrcIP,new_src_port, (short)0,outPort,IDLE_TIMEOUT,HARD_TIMEOUT,HIGH_PRIORITY);
 			if(rs==false){
-				System.err.println("    Error installing rule:"+match);
+				System.err.println("    error installing rule: Match"+match);
 			}
 			return true;
 		}
