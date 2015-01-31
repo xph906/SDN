@@ -327,10 +327,6 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 					}
 					clearMaps();
 					
-					/*logger.info("2 old i2e connection info exists: "+
-										IPv4.fromIPv4Address(e2IFlow.srcIP)+
-										" "+IPv4.fromIPv4Address(e2IFlow.dstIP)+
-										" "+IPv4.fromIPv4Address(conn.srcIP)); */
 				}
 				else{
 					logger.LogError("shouldn't come here "+conn);
@@ -915,10 +911,11 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 			return true;
 		}
 		else if(Honeynet.inSubnet(mask,conn.dstIP)){
-			/*For test*/
+			/*For test
 			int special_ip = IPv4.toIPv4Address("130.107.244.244");
 			if((conn.dstPort != (short)80)|| (conn.dstIP != special_ip) )
 				return true;
+			*/
 			
 			//130.107.244.244:3357-129.105.44.107:80
 			String key = ForwardFlowItem.generateForwardFlowTableKey(conn.dstIP, conn.srcPort, nw.getIp(), conn.dstPort);
@@ -982,8 +979,8 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 			{	/*src_ip, short src_port, int dst_ip, short dst_port, short new_src_port,  timeout*/
 				System.err.println("    no entry exists");
 				/* For test */		
-				new_src_port = (short)(conn.srcPort+(short)100);
-				key = ForwardFlowItem.generateForwardFlowTableKey(conn.dstIP, new_src_port, nw.getIp(), conn.dstPort);
+				//new_src_port = (short)(conn.srcPort+(short)100);
+				//key = ForwardFlowItem.generateForwardFlowTableKey(conn.dstIP, new_src_port, nw.getIp(), conn.dstPort);
 				
 				ForwardFlowItem item = new ForwardFlowItem(conn.srcIP,conn.srcPort,conn.dstIP,conn.dstPort,new_src_port,(long)HARD_TIMEOUT,
 								conn.getProtocol(),nw.getIp());
