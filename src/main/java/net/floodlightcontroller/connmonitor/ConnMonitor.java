@@ -1438,6 +1438,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 	    			}
 	    			else{
 	    				System.err.println("    unknown IP packet. Ignore...");
+	    				return false;
 	    			}
 	            	
             	}
@@ -1457,20 +1458,34 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
             	if(ChecksumCalc.reCalcAndUpdateIPPacketChecksum(ip_pkt_data, ip_header_len)==false){
             		System.err.println("error calculating ip pkt checksum");
             	}
-            	 	
+            	
+            	/* install Ethernet header */
             	byte[] new_ether_data = new byte[packet_len];
             	for(int i=0; i<ChecksumCalc.ETHERNET_HEADER_LEN; i++)
             		new_ether_data[i] = packetData[i];
-            	for(int i=ChecksumCalc.ETHERNET_HEADER_LEN,j=0; 
-            			i<ChecksumCalc.ETHERNET_HEADER_LEN+ip_header_len; 
-            			i++,j++){
-            		new_ether_data[i] = ip_pkt_data[j];
+            	
+            	if(new_tp_data != null){
+	            	for(int i=ChecksumCalc.ETHERNET_HEADER_LEN,j=0; 
+	            			i<ChecksumCalc.ETHERNET_HEADER_LEN+ip_header_len; 
+	            			i++,j++){
+	            		new_ether_data[i] = ip_pkt_data[j];
+	            	}
+	            	for(int i=ChecksumCalc.ETHERNET_HEADER_LEN+ip_header_len,j=0;i<packet_len; i++,j++){
+	            		if(j < new_tp_data.length)
+	            			new_ether_data[i] = new_tp_data[j];
+	            		else
+	            			new_ether_data[i] = 0x00;
+	            	}
             	}
-            	for(int i=ChecksumCalc.ETHERNET_HEADER_LEN+ip_header_len,j=0;i<packet_len; i++,j++){
-            		if(j < new_tp_data.length)
-            			new_ether_data[i] = new_tp_data[j];
-            		else
-            			new_ether_data[i] = 0x00;
+            	else{
+            		for(int i=ChecksumCalc.ETHERNET_HEADER_LEN,j=0; 
+	            			i<packet_len; 
+	            			i++,j++){
+            			if(j < ip_len)
+            				new_ether_data[i] = ip_pkt_data[j];
+            			else
+            				new_ether_data[i] = 0x00;
+            		}
             	}
             	
             	pktOut.setPacketData(new_ether_data);      
