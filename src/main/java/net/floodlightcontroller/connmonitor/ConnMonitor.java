@@ -24,9 +24,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.Vector;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 
@@ -171,6 +173,9 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 	private long packetCounter;
 	private long droppedCounter;
 	private long droppedHIHCounter;
+	
+	BlockingQueue<ForwardFlowItem> flowRemovedTasks;
+	BlockingQueue<ForwardFlowItem> flowRemovedDoneTasks;
 	
 	@Override
 	public String getName() {
@@ -1794,7 +1799,10 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 	    
 	    /* Init other honeynet */
 	    Honeynet.putHoneynet("nw", IPv4.toIPv4Address("129.105.44.107"), IPv4.toIPv4Address("130.107.240.0"), 20);
-	      
+	    
+	    flowRemovedTasks = new LinkedBlockingQueue<ForwardFlowItem>();
+		flowRemovedDoneTasks = new LinkedBlockingQueue<ForwardFlowItem>();
+	    
 	    lastClearConnMapTime = System.currentTimeMillis();
 	    lastClearConnToPotTime = System.currentTimeMillis();
 
