@@ -1424,12 +1424,12 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
      		actionLen += OFActionDataLayerDestination.MINIMUM_LENGTH;
      	}
      	
-     	if(srcIP != null){
+     	/*if(srcIP != null){
 			OFActionNetworkLayerSource action_mod_src_ip = 
 					new OFActionNetworkLayerSource(IPv4.toIPv4Address(srcIP));
 			actions.add(action_mod_src_ip);
-			//actionLen += OFActionNetworkLayerSource.MINIMUM_LENGTH;
-		}/*
+			actionLen += OFActionNetworkLayerSource.MINIMUM_LENGTH;
+		}
      	if(dstIP != null){
 			OFActionNetworkLayerDestination action_mod_dst_ip = 
 					new OFActionNetworkLayerDestination(IPv4.toIPv4Address(dstIP));
@@ -1492,6 +1492,20 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
             	/* Modify ID */
             	ip_pkt_data[4] = (byte)((id>>>8) & 0xff);
             	ip_pkt_data[5] = (byte)(id & 0xff);
+            	
+            	if(srcIP != null){
+            		ip_pkt_data[12] = srcIP[0];
+            		ip_pkt_data[13] = srcIP[1];
+            		ip_pkt_data[14] = srcIP[2];
+            		ip_pkt_data[15] = srcIP[3];
+            	}
+            	if(dstIP != null){
+            		ip_pkt_data[16] = dstIP[0];
+            		ip_pkt_data[17] = dstIP[1];
+            		ip_pkt_data[18] = dstIP[2];
+            		ip_pkt_data[19] = dstIP[3];
+            	}
+            		
             	
             	//System.err.println("NEW DSCP:"+byteToHexString(dscp)+" ID:"+shortToHexString(ecn));
             	if(ChecksumCalc.reCalcAndUpdateIPPacketChecksum(ip_pkt_data, ip_header_len)==false){
