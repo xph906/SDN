@@ -1420,6 +1420,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
      	System.err.println("forward new dst: "+IPv4.fromIPv4Address(IPv4.toIPv4Address(dstIP)));
      	
      	List<OFAction> actions = new ArrayList<OFAction>();
+     	
      	int actionLen = 0;
      	if(dstMAC != null){
      		OFActionDataLayerDestination action_mod_dst_mac = 
@@ -1428,7 +1429,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
      		actionLen += OFActionDataLayerDestination.MINIMUM_LENGTH;
      	}
      	
-     	/*if(srcIP != null){
+     	if(srcIP != null){
 			OFActionNetworkLayerSource action_mod_src_ip = 
 					new OFActionNetworkLayerSource(IPv4.toIPv4Address(srcIP));
 			actions.add(action_mod_src_ip);
@@ -1439,7 +1440,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 					new OFActionNetworkLayerDestination(IPv4.toIPv4Address(dstIP));
 			actions.add(action_mod_dst_ip);
 			actionLen += OFActionNetworkLayerDestination.MINIMUM_LENGTH;
-		}*/
+		}
 		if(newSrcPort != 0){
 			OFActionTransportLayerSource action_mod_src_tp =
 					new OFActionTransportLayerSource(newSrcPort);
@@ -1455,12 +1456,13 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 		
 		
 		OFActionOutput action_out_port;
-		actionLen += OFActionOutput.MINIMUM_LENGTH;
+		//actionLen += OFActionOutput.MINIMUM_LENGTH;
+		
 		if(pktInMsg.getInPort() == outSwPort){
-			action_out_port = new OFActionOutput(OFPort.OFPP_IN_PORT.getValue());
+			action_out_port = new OFActionOutput(OFPort.OFPP_IN_PORT.getValue(), (short)65535 );
 		}
 		else{
-			action_out_port = new OFActionOutput(outSwPort);
+			action_out_port = new OFActionOutput(outSwPort,(short)65535 );
 		}
 		actions.add(action_out_port);
 		pktOut.setActions(actions);
