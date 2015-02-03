@@ -1456,13 +1456,13 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 		
 		
 		OFActionOutput action_out_port;
-		//actionLen += OFActionOutput.MINIMUM_LENGTH;
+		actionLen += OFActionOutput.MINIMUM_LENGTH;
 		
 		if(pktInMsg.getInPort() == outSwPort){
-			action_out_port = new OFActionOutput(OFPort.OFPP_IN_PORT.getValue(), (short)65535 );
+			action_out_port = new OFActionOutput(OFPort.OFPP_IN_PORT.getValue(), (short)1500 );
 		}
 		else{
-			action_out_port = new OFActionOutput(outSwPort,(short)65535 );
+			action_out_port = new OFActionOutput(outSwPort,(short)1500 );
 		}
 		actions.add(action_out_port);
 		pktOut.setActions(actions);
