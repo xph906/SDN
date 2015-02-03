@@ -269,7 +269,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 			if(processedByOtherHoneynets(conn, ((OFPacketIn)msg).getInPort(), sw,msg, eth) ){
 				return Command.CONTINUE;
 			}
-			else if(x==y){
+			else if(x==y){/*For test*/
 				return Command.CONTINUE;
 			}
 			
@@ -530,7 +530,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 				return Command.CONTINUE;
 			}
 			//forwardPacket(sw,pktInMsg, dstMAC,dstIP,srcIP,outPort);
-			boolean result2 = forwardPacket(sw,pktInMsg, newDstMAC,newDstIP,srcIP,outPort, eth);
+			boolean result2 = forwardPacket(sw,pktInMsg, newDstMAC,newDstIP,srcIP,outPort);
 			
 			if(!result1 || !result2){
 				logger.LogError("fail to install rule for "+conn);
@@ -966,7 +966,8 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 			System.err.println("    new_dst_port:"+positivePort(new_dst_port));
 			boolean rs = installPathForFlow(switch_id,inport,match,OFFlowMod.OFPFF_SEND_FLOW_REM,
 											item.getFlow_cookie(), newDstMAC,newDstIP,newSrcIP,
-											(short)0, new_dst_port,outPort,IDLE_TIMEOUT,HARD_TIMEOUT,HIGH_PRIORITY);			
+											(short)0, new_dst_port,outPort,IDLE_TIMEOUT,HARD_TIMEOUT,HIGH_PRIORITY);
+			forwardPacket(sw,(OFPacketIn)msg, nc_mac_address,newDstIP,newSrcIP,outPort);
 			if (rs == false){
 				System.err.println("    Fail setting ruls for sending traffic to NW");
 			}
@@ -1334,7 +1335,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 	}
 	
 	public boolean forwardPacket(IOFSwitch sw, OFPacketIn pktInMsg, 
-			byte[] dstMAC, byte[] destIP, byte[] srcIP, short outSwPort, Ethernet eth) 
+			byte[] dstMAC, byte[] destIP, byte[] srcIP, short outSwPort) 
     {
         OFPacketOut pktOut = new OFPacketOut();        
         
