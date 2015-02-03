@@ -1410,7 +1410,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
         
      	List<OFAction> actions = new ArrayList<OFAction>();
      	int actionLen = 0;
-  /*   	if(dstMAC != null){
+     	if(dstMAC != null){
      		OFActionDataLayerDestination action_mod_dst_mac = 
 					new OFActionDataLayerDestination(dstMAC);
      		actions.add(action_mod_dst_mac);
@@ -1428,7 +1428,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 			actions.add(action_mod_src_ip);
 			actionLen += OFActionNetworkLayerSource.MINIMUM_LENGTH;
 		}
-		if(newSrcPort != 0){
+		/*if(newSrcPort != 0){
 			OFActionTransportLayerSource action_mod_src_tp =
 					new OFActionTransportLayerSource(newSrcPort);
 			actions.add(action_mod_src_tp);
@@ -1439,8 +1439,8 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 					new OFActionTransportLayerDestination(newDstPort);
 			actions.add(action_mod_dst_tp);
 			actionLen += OFActionTransportLayerDestination.MINIMUM_LENGTH;
-		}
-		*/
+		}*/
+		
 		
 		OFActionOutput action_out_port;
 		actionLen += OFActionOutput.MINIMUM_LENGTH;
