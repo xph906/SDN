@@ -1412,18 +1412,18 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
         
         pktOut.setInPort(pktInMsg.getInPort());
         pktOut.setBufferId(pktInMsg.getBufferId());
-        
+        System.err.println("forward new src: "+IPv4.fromIPv4Address(IPv4.toIPv4Address(srcIP)));
+     	System.err.println("forward new dst: "+IPv4.fromIPv4Address(IPv4.toIPv4Address(dstIP)));
+     	
      	List<OFAction> actions = new ArrayList<OFAction>();
      	int actionLen = 0;
-     	if(dstMAC != null){
+     	/*if(dstMAC != null){
      		OFActionDataLayerDestination action_mod_dst_mac = 
 					new OFActionDataLayerDestination(dstMAC);
      		actions.add(action_mod_dst_mac);
      		actionLen += OFActionDataLayerDestination.MINIMUM_LENGTH;
      	}
-     	System.err.println("forward new src: "+IPv4.fromIPv4Address(IPv4.toIPv4Address(srcIP)));
-     	System.err.println("forward new dst: "+IPv4.fromIPv4Address(IPv4.toIPv4Address(dstIP)));
-     	/*
+     	
      	if(srcIP != null){
 			OFActionNetworkLayerSource action_mod_src_ip = 
 					new OFActionNetworkLayerSource(IPv4.toIPv4Address(srcIP));
@@ -1435,8 +1435,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 					new OFActionNetworkLayerDestination(IPv4.toIPv4Address(dstIP));
 			actions.add(action_mod_dst_ip);
 			actionLen += OFActionNetworkLayerDestination.MINIMUM_LENGTH;
-		}*/
-		
+		}
 		if(newSrcPort != 0){
 			OFActionTransportLayerSource action_mod_src_tp =
 					new OFActionTransportLayerSource(newSrcPort);
@@ -1448,7 +1447,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 					new OFActionTransportLayerDestination(newDstPort);
 			actions.add(action_mod_dst_tp);
 			actionLen += OFActionTransportLayerDestination.MINIMUM_LENGTH;
-		}
+		}*/
 		
 		
 		OFActionOutput action_out_port;
