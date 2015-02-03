@@ -884,23 +884,48 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 				System.err.println("    can't find this flow. give up!!!");
 				return true;
 			}
-			IPacket packet = eth.getPayload();		
+			IPacket packet = eth.getPayload();	
+			short front_src_ip = (short)( (item.getRemote_ip()>>>16) & 0x0000ffff);
+			short end_src_ip = (short)(item.getRemote_ip() & 0x0000ffff);
 			if(packet instanceof IPv4){
 				IPv4 ip_pkt = (IPv4)packet;
 				/* FIXME: information is stored in ecn because dscn will be striped!!! */
 				byte ecn = ip_pkt.getDiffServ();
 				if(ecn == 0x01){
 					System.err.println("missing 0x04 setup packet");
+					forwardPacket2OtherNet(sw, (OFPacketIn)msg, nw_ip_address,
+							IPv4.toIPv4AddressBytes(nw.getIp()), IPv4.toIPv4AddressBytes(conn.dstIP),
+							((OFPacketIn)msg).getInPort(), 
+							eth, (byte)0x01, front_src_ip, 
+							conn.dstPort, conn.srcPort); 
+					return true;
 				}
 				else if(ecn == 0x02){
 					System.err.println("missing 0x08 setup packet");
+					forwardPacket2OtherNet(sw, (OFPacketIn)msg, nw_ip_address,
+							IPv4.toIPv4AddressBytes(nw.getIp()), IPv4.toIPv4AddressBytes(conn.dstIP),
+							((OFPacketIn)msg).getInPort(), 
+							eth, (byte)0x02, end_src_ip, 
+							conn.dstPort, conn.srcPort); 
+					return true;
 				}
 				else if(ecn == 0x03){
 					System.err.println("missing 0x0c setup packet");
+					forwardPacket2OtherNet(sw, (OFPacketIn)msg, nw_ip_address,
+							IPv4.toIPv4AddressBytes(nw.getIp()), IPv4.toIPv4AddressBytes(conn.dstIP),
+							((OFPacketIn)msg).getInPort(), 
+							eth, (byte)0x01, front_src_ip, 
+							conn.dstPort, conn.srcPort); 
+					forwardPacket2OtherNet(sw, (OFPacketIn)msg, nw_ip_address,
+							IPv4.toIPv4AddressBytes(nw.getIp()), IPv4.toIPv4AddressBytes(conn.dstIP),
+							((OFPacketIn)msg).getInPort(), 
+							eth, (byte)0x02, end_src_ip, 
+							conn.dstPort, conn.srcPort); 
+					return true;
 				}
 				else{
-					System.err.println(packet.serialize().length+" "+bytesToHexString(packet.serialize()));			
-					System.err.println("  dscn: "+ecn);
+					//System.err.println(packet.serialize().length+" "+bytesToHexString(packet.serialize()));			
+					//System.err.println("  dscn: "+ecn);
 				}
 			}
 			System.err.println("    original src:"+IPv4.fromIPv4Address(item.getSrc_ip()));
@@ -1413,7 +1438,6 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 		pktOut.setActions(actions);
 		pktOut.setActionsLength((short)actionLen);
 	    
-		
         // Set data if it is included in the packet in but buffer id is NONE
         if (pktOut.getBufferId() == OFPacketOut.BUFFER_ID_NONE) 
         {
