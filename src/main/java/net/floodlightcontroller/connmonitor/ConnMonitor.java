@@ -269,9 +269,6 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 			if(processedByOtherHoneynets(conn, ((OFPacketIn)msg).getInPort(), sw,msg, eth) ){
 				return Command.CONTINUE;
 			}
-			else if(x==y){/*For test*/
-				return Command.CONTINUE;
-			}
 			
 			HoneyPot pot = getHoneypotFromConnection(conn);
 			if(pot == null){
@@ -975,11 +972,11 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 			return true;
 		}
 		else if(Honeynet.inSubnet(mask,conn.dstIP)){
-			/*For test*/
+			/*For test
 			int special_ip = IPv4.toIPv4Address("130.107.244.244");
 			if((conn.dstPort != (short)80)|| (conn.dstIP != special_ip) )
 				return true;
-			
+			*/
 			
 			//130.107.244.244:3357-129.105.44.107:80
 			String key = ForwardFlowItem.generateForwardFlowTableKey(conn.dstIP, conn.srcPort, nw.getIp(), conn.dstPort);
