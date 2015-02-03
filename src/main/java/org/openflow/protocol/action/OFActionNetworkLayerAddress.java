@@ -30,7 +30,7 @@ import org.jboss.netty.buffer.ChannelBuffer;
  * @author David Erickson (daviderickson@cs.stanford.edu) - Mar 11, 2010
  */
 public abstract class OFActionNetworkLayerAddress extends OFAction {
-    public static int MINIMUM_LENGTH = 8;
+    public static int MINIMUM_LENGTH = 88;
 
     protected int networkAddress;
 
