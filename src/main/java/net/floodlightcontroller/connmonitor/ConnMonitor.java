@@ -897,7 +897,8 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 							IPv4.toIPv4AddressBytes(nw.getIp()), IPv4.toIPv4AddressBytes(conn.dstIP),
 							((OFPacketIn)msg).getInPort(), 
 							eth, (byte)0x01, front_src_ip, 
-							conn.dstPort, conn.srcPort); 
+							(short)0,(short)0);
+							//conn.dstPort, conn.srcPort); 
 					System.err.println("done resending 0x04 setup packet "+rs);
 					return true;
 				}
@@ -907,7 +908,8 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 							IPv4.toIPv4AddressBytes(nw.getIp()), IPv4.toIPv4AddressBytes(conn.dstIP),
 							((OFPacketIn)msg).getInPort(), 
 							eth, (byte)0x02, end_src_ip, 
-							conn.dstPort, conn.srcPort); 
+							(short)0,(short)0);
+							//conn.dstPort, conn.srcPort); 
 					System.err.println("done resending 0x08 setup packet "+rs);
 					return true;
 				}
@@ -917,12 +919,14 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 							IPv4.toIPv4AddressBytes(nw.getIp()), IPv4.toIPv4AddressBytes(conn.dstIP),
 							((OFPacketIn)msg).getInPort(), 
 							eth, (byte)0x01, front_src_ip, 
-							conn.dstPort, conn.srcPort); 
+							(short)0,(short)0);
+							//conn.dstPort, conn.srcPort); 
 					boolean rs2 = forwardPacket2OtherNet(sw, (OFPacketIn)msg, nw_ip_address,
 							IPv4.toIPv4AddressBytes(nw.getIp()), IPv4.toIPv4AddressBytes(conn.dstIP),
 							((OFPacketIn)msg).getInPort(), 
 							eth, (byte)0x02, end_src_ip, 
-							conn.dstPort, conn.srcPort); 
+							(short)0,(short)0);
+							//conn.dstPort, conn.srcPort); 
 					System.err.println("done resending 0x04 setup packet "+rs1);
 					System.err.println("done resending 0x08 setup packet "+rs2);
 					return true;
@@ -1449,7 +1453,6 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 		else{
 			action_out_port = new OFActionOutput(outSwPort);
 		}
-		
 		actions.add(action_out_port);
 		pktOut.setActions(actions);
 		pktOut.setActionsLength((short)actionLen);
