@@ -1400,7 +1400,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 	}
 	
 	public boolean forwardPacket2OtherNet(IOFSwitch sw, OFPacketIn pktInMsg, 
-			byte[] dstMAC, byte[] destIP, byte[] srcIP, short outSwPort, Ethernet eth, byte dscp, short id, 
+			byte[] dstMAC, byte[] dstIP, byte[] srcIP, short outSwPort, Ethernet eth, byte dscp, short id, 
 			short newSrcPort, short newDstPort) 
     {
         OFPacketOut pktOut = new OFPacketOut();        
@@ -1427,7 +1427,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 		}
      	if(destIP != null){
 			OFActionNetworkLayerDestination action_mod_dst_ip = 
-					new OFActionNetworkLayerDestination(IPv4.toIPv4Address(destIP));
+					new OFActionNetworkLayerDestination(IPv4.toIPv4Address(dstIP));
 			actions.add(action_mod_dst_ip);
 			actionLen += OFActionNetworkLayerDestination.MINIMUM_LENGTH;
 		}*/
