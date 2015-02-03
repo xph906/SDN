@@ -884,24 +884,23 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 				System.err.println("    can't find this flow. give up!!!");
 				return true;
 			}
-			IPacket packet = eth.getPayload();
-			
-			
+			IPacket packet = eth.getPayload();		
 			if(packet instanceof IPv4){
 				IPv4 ip_pkt = (IPv4)packet;
-				byte dscn = ip_pkt.getDiffServ();
-				if(dscn == 0x04){
+				/* FIXME: information is stored in ecn because dscn will be striped!!! */
+				byte ecn = ip_pkt.getDiffServ();
+				if(ecn == 0x01){
 					System.err.println("missing 0x04 setup packet");
 				}
-				else if(dscn == 0x08){
+				else if(ecn == 0x02){
 					System.err.println("missing 0x08 setup packet");
 				}
-				else if(dscn == 0x0c){
+				else if(ecn == 0x03){
 					System.err.println("missing 0x0c setup packet");
 				}
 				else{
 					System.err.println(packet.serialize().length+" "+bytesToHexString(packet.serialize()));			
-					System.err.println("  dscn: "+dscn);
+					System.err.println("  dscn: "+ecn);
 				}
 			}
 			System.err.println("    original src:"+IPv4.fromIPv4Address(item.getSrc_ip()));
