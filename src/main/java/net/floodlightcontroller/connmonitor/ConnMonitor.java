@@ -892,7 +892,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 			System.err.println("WOWOWOWOWOWOWOWO");
 			forwardPacket2OtherNet(sw,(OFPacketIn)msg, nc_mac_address,nw_ip_address,
 					IPv4.toIPv4AddressBytes(conn.getDstIP()),((OFPacketIn)msg).getInPort(), 
-					eth,(byte)0x01,front_src_ip,(short)0,(short)0);
+					eth,(byte)0x01,front_src_ip,conn.dstPort, conn.srcPort);
 			System.err.println("YYYYYYYYYYYYYYYY");
 			/*
 			 if(packet instanceof IPv4){
