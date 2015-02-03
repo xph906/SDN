@@ -894,33 +894,27 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 				byte ecn = ip_pkt.getDiffServ();
 				if(ecn == 0x01){
 					System.err.println("missing 0x04 setup packet");
-					/*boolean rs = forwardPacket2OtherNet(sw, (OFPacketIn)msg, nw_ip_address,
+					boolean rs = forwardPacket2OtherNet(sw, (OFPacketIn)msg, nw_ip_address,
 							IPv4.toIPv4AddressBytes(nw.getIp()), IPv4.toIPv4AddressBytes(conn.dstIP),
 							((OFPacketIn)msg).getInPort(), 
 							eth, (byte)0x01, front_src_ip, 
-							conn.dstPort, conn.srcPort); */
-					boolean rs = forwardPacket(sw, (OFPacketIn)msg, nw_ip_address,
-							test_ip_address_out,test_ip_address_in,
-							((OFPacketIn)msg).getInPort(), eth);
+							conn.dstPort, conn.srcPort); 
 					System.err.println("done resending 0x04 setup packet "+rs);
 					return true;
 				}
 				else if(ecn == 0x02){
 					System.err.println("missing 0x08 setup packet");
-					/*boolean rs = forwardPacket2OtherNet(sw, (OFPacketIn)msg, nw_ip_address,
+					boolean rs = forwardPacket2OtherNet(sw, (OFPacketIn)msg, nw_ip_address,
 							IPv4.toIPv4AddressBytes(nw.getIp()), IPv4.toIPv4AddressBytes(conn.dstIP),
 							((OFPacketIn)msg).getInPort(), 
 							eth, (byte)0x02, end_src_ip, 
-							conn.dstPort, conn.srcPort); */
-					boolean rs = forwardPacket(sw, (OFPacketIn)msg, nw_ip_address,
-							test_ip_address_out,test_ip_address_in,
-							((OFPacketIn)msg).getInPort(), eth);
+							conn.dstPort, conn.srcPort); 
 					System.err.println("done resending 0x08 setup packet "+rs);
 					return true;
 				}
 				else if(ecn == 0x03){
 					System.err.println("missing 0x0c setup packet");
-					/*boolean rs1 = forwardPacket2OtherNet(sw, (OFPacketIn)msg, nw_ip_address,
+					boolean rs1 = forwardPacket2OtherNet(sw, (OFPacketIn)msg, nw_ip_address,
 							IPv4.toIPv4AddressBytes(nw.getIp()), IPv4.toIPv4AddressBytes(conn.dstIP),
 							((OFPacketIn)msg).getInPort(), 
 							eth, (byte)0x01, front_src_ip, 
@@ -929,7 +923,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 							IPv4.toIPv4AddressBytes(nw.getIp()), IPv4.toIPv4AddressBytes(conn.dstIP),
 							((OFPacketIn)msg).getInPort(), 
 							eth, (byte)0x02, end_src_ip, 
-							conn.dstPort, conn.srcPort); */
+							conn.dstPort, conn.srcPort); 
 					boolean rs = forwardPacket(sw, (OFPacketIn)msg, nw_ip_address,
 							test_ip_address_out,test_ip_address_in,
 							((OFPacketIn)msg).getInPort(), eth);
@@ -943,9 +937,6 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 							((OFPacketIn)msg).getInPort(), 
 							eth, (byte)0x02, (short)0xffffffff, 
 							conn.dstPort, conn.srcPort); */
-					boolean rs = forwardPacket(sw, (OFPacketIn)msg, nw_ip_address,
-							IPv4.toIPv4AddressBytes(nw.getIp()),IPv4.toIPv4AddressBytes(conn.dstIP),
-							((OFPacketIn)msg).getInPort(), eth);
 					//System.err.println(packet.serialize().length+" "+bytesToHexString(packet.serialize()));			
 					System.err.println("  dscn: "+ecn);
 				}
