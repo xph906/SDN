@@ -886,8 +886,9 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 				return true;
 			}
 			IPacket packet = eth.getPayload();	
-			short front_src_ip = (short)( (item.getRemote_ip()>>>16) & 0x0000ffff);
-			short end_src_ip = (short)(item.getRemote_ip() & 0x0000ffff);
+			
+			short front_src_ip = (short)( (item.getSrc_ip()>>>16) & 0x0000ffff);
+			short end_src_ip = (short)(item.getSrc_ip() & 0x0000ffff);
 			
 			/*System.err.println("WOWOWOWOWOWOWOWO");
 			forwardPacket2OtherNet(sw,(OFPacketIn)msg, nc_mac_address,nw_ip_address,
