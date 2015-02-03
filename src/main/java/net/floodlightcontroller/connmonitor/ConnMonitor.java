@@ -893,34 +893,38 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 				byte ecn = ip_pkt.getDiffServ();
 				if(ecn == 0x01){
 					System.err.println("missing 0x04 setup packet");
-					forwardPacket2OtherNet(sw, (OFPacketIn)msg, nw_ip_address,
+					boolean rs = forwardPacket2OtherNet(sw, (OFPacketIn)msg, nw_ip_address,
 							IPv4.toIPv4AddressBytes(nw.getIp()), IPv4.toIPv4AddressBytes(conn.dstIP),
 							((OFPacketIn)msg).getInPort(), 
 							eth, (byte)0x01, front_src_ip, 
 							conn.dstPort, conn.srcPort); 
+					System.err.println("done resending 0x04 setup packet "+rs);
 					return true;
 				}
 				else if(ecn == 0x02){
 					System.err.println("missing 0x08 setup packet");
-					forwardPacket2OtherNet(sw, (OFPacketIn)msg, nw_ip_address,
+					boolean rs = forwardPacket2OtherNet(sw, (OFPacketIn)msg, nw_ip_address,
 							IPv4.toIPv4AddressBytes(nw.getIp()), IPv4.toIPv4AddressBytes(conn.dstIP),
 							((OFPacketIn)msg).getInPort(), 
 							eth, (byte)0x02, end_src_ip, 
 							conn.dstPort, conn.srcPort); 
+					System.err.println("done resending 0x08 setup packet "+rs);
 					return true;
 				}
 				else if(ecn == 0x03){
 					System.err.println("missing 0x0c setup packet");
-					forwardPacket2OtherNet(sw, (OFPacketIn)msg, nw_ip_address,
+					boolean rs1 = forwardPacket2OtherNet(sw, (OFPacketIn)msg, nw_ip_address,
 							IPv4.toIPv4AddressBytes(nw.getIp()), IPv4.toIPv4AddressBytes(conn.dstIP),
 							((OFPacketIn)msg).getInPort(), 
 							eth, (byte)0x01, front_src_ip, 
 							conn.dstPort, conn.srcPort); 
-					forwardPacket2OtherNet(sw, (OFPacketIn)msg, nw_ip_address,
+					boolean rs2 = forwardPacket2OtherNet(sw, (OFPacketIn)msg, nw_ip_address,
 							IPv4.toIPv4AddressBytes(nw.getIp()), IPv4.toIPv4AddressBytes(conn.dstIP),
 							((OFPacketIn)msg).getInPort(), 
 							eth, (byte)0x02, end_src_ip, 
 							conn.dstPort, conn.srcPort); 
+					System.err.println("done resending 0x04 setup packet "+rs1);
+					System.err.println("done resending 0x08 setup packet "+rs2);
 					return true;
 				}
 				else{
@@ -1466,13 +1470,9 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
             	IPv4 ip_pkt = (IPv4)pkt;
             	int ip_len = ip_pkt.getTotalLength();
             	int ip_header_len = (ip_pkt.getHeaderLength() & 0x000000ff) * 4;
-            	short payload_len = (short)(ip_len - ip_header_len);
-            	int src_ip = ip_pkt.getSourceAddress();
-            	int dst_ip = ip_pkt.getDestinationAddress();
             	//System.err.println("msglen:"+msg_len+" packetlen:"+packet_len+" iplen:"+ip_len+" ip headerlen:"+ip_header_len);
             	byte[] ip_pkt_data = Arrays.copyOfRange(packetData,
             				ChecksumCalc.ETHERNET_HEADER_LEN,ChecksumCalc.ETHERNET_HEADER_LEN + ip_len);
-            	byte[] new_tp_data = null;
             	
             	/* Modify DSCP */
             	byte ecn =  (byte)((int)(ip_pkt_data[1])&0x03);	
@@ -1523,6 +1523,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
         
         try 
         {
+        	System.err.println("wrote pktOut");
             sw.write(pktOut, null);
             sw.flush();
             //logger.info("forwarded packet ");
