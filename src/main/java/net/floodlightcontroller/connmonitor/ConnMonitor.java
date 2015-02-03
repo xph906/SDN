@@ -897,8 +897,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 							IPv4.toIPv4AddressBytes(nw.getIp()), IPv4.toIPv4AddressBytes(conn.dstIP),
 							((OFPacketIn)msg).getInPort(), 
 							eth, (byte)0x01, front_src_ip, 
-							(short)0,(short)0);
-							//conn.dstPort, conn.srcPort); 
+							conn.dstPort, conn.srcPort); 
 					System.err.println("done resending 0x04 setup packet "+rs);
 					return true;
 				}
@@ -908,8 +907,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 							IPv4.toIPv4AddressBytes(nw.getIp()), IPv4.toIPv4AddressBytes(conn.dstIP),
 							((OFPacketIn)msg).getInPort(), 
 							eth, (byte)0x02, end_src_ip, 
-							(short)0,(short)0);
-							//conn.dstPort, conn.srcPort); 
+							conn.dstPort, conn.srcPort); 
 					System.err.println("done resending 0x08 setup packet "+rs);
 					return true;
 				}
@@ -919,14 +917,12 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 							IPv4.toIPv4AddressBytes(nw.getIp()), IPv4.toIPv4AddressBytes(conn.dstIP),
 							((OFPacketIn)msg).getInPort(), 
 							eth, (byte)0x01, front_src_ip, 
-							(short)0,(short)0);
-							//conn.dstPort, conn.srcPort); 
+							conn.dstPort, conn.srcPort); 
 					boolean rs2 = forwardPacket2OtherNet(sw, (OFPacketIn)msg, nw_ip_address,
 							IPv4.toIPv4AddressBytes(nw.getIp()), IPv4.toIPv4AddressBytes(conn.dstIP),
 							((OFPacketIn)msg).getInPort(), 
 							eth, (byte)0x02, end_src_ip, 
-							(short)0,(short)0);
-							//conn.dstPort, conn.srcPort); 
+							conn.dstPort, conn.srcPort); 
 					System.err.println("done resending 0x04 setup packet "+rs1);
 					System.err.println("done resending 0x08 setup packet "+rs2);
 					return true;
@@ -1414,7 +1410,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
         
      	List<OFAction> actions = new ArrayList<OFAction>();
      	int actionLen = 0;
-     	if(dstMAC != null){
+  /*   	if(dstMAC != null){
      		OFActionDataLayerDestination action_mod_dst_mac = 
 					new OFActionDataLayerDestination(dstMAC);
      		actions.add(action_mod_dst_mac);
@@ -1444,6 +1440,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 			actions.add(action_mod_dst_tp);
 			actionLen += OFActionTransportLayerDestination.MINIMUM_LENGTH;
 		}
+		*/
 		
 		OFActionOutput action_out_port;
 		actionLen += OFActionOutput.MINIMUM_LENGTH;
