@@ -1496,11 +1496,11 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
             	byte[] ip_pkt_data = Arrays.copyOfRange(packetData,
             				ChecksumCalc.ETHERNET_HEADER_LEN,ChecksumCalc.ETHERNET_HEADER_LEN + ip_len);
             	
-            	byte ecn =  (byte)((int)(ip_pkt_data[1])&0x03);	
+            	//byte ecn =  (byte)((int)(ip_pkt_data[1])&0x03);	
             	dscp = (byte)(dscp << 2);
-            	ip_pkt_data[1] = (byte)((dscp|ecn)&0xff);
+            	ip_pkt_data[1] = (byte)((dscp)&0xff);
             	dscp = (byte)((int)(ip_pkt_data[1])>>>2);
-            	ecn =  (byte)((int)(ip_pkt_data[1])&0x03);
+            	//ecn =  (byte)((int)(ip_pkt_data[1])&0x03);
             	
             	ip_pkt_data[4] = (byte)((id>>>8) & 0xff);
             	ip_pkt_data[5] = (byte)(id & 0xff);
