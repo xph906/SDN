@@ -897,7 +897,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 					System.err.println("missing 0x0c setup packet");
 				}
 				else{
-					
+					System.err.println("dscn: "+dscn);
 				}
 			}
 			System.err.println("    original src:"+IPv4.fromIPv4Address(item.getSrc_ip()));
