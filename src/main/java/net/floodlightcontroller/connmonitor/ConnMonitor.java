@@ -888,9 +888,11 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 			IPacket packet = eth.getPayload();	
 			short front_src_ip = (short)( (item.getRemote_ip()>>>16) & 0x0000ffff);
 			short end_src_ip = (short)(item.getRemote_ip() & 0x0000ffff);
-			if(packet instanceof IPv4){
+		
+			/*
+			 if(packet instanceof IPv4){
 				IPv4 ip_pkt = (IPv4)packet;
-				/* FIXME: information is stored in ecn because dscn will be striped!!! */
+				// FIXME: information is stored in ecn because dscn will be striped!!! 
 				byte ecn = ip_pkt.getDiffServ();
 				if(ecn == 0x01){
 					System.err.println("missing 0x04 setup packet "+((OFPacketIn)msg).getInPort());
@@ -932,15 +934,15 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 					return true;
 				}
 				else{
-					/*boolean rs = forwardPacket2OtherNet(sw, (OFPacketIn)msg, nw_ip_address,
-							IPv4.toIPv4AddressBytes(nw.getIp()), IPv4.toIPv4AddressBytes(conn.dstIP),
-							((OFPacketIn)msg).getInPort(), 
-							eth, (byte)0x02, (short)0xffffffff, 
-							conn.dstPort, conn.srcPort); */
+					//boolean rs = forwardPacket2OtherNet(sw, (OFPacketIn)msg, nw_ip_address,
+					//		IPv4.toIPv4AddressBytes(nw.getIp()), IPv4.toIPv4AddressBytes(conn.dstIP),
+					//		((OFPacketIn)msg).getInPort(), 
+					//		eth, (byte)0x02, (short)0xffffffff, 
+					//		conn.dstPort, conn.srcPort); 
 					//System.err.println(packet.serialize().length+" "+bytesToHexString(packet.serialize()));			
 					System.err.println("  dscn: "+ecn);
 				}
-			}
+			}*/
 			System.err.println("    original src:"+IPv4.fromIPv4Address(item.getSrc_ip()));
 			/* nw->outside rule */
 			OFMatch match = new OFMatch();	
@@ -1060,7 +1062,11 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 					eth,(byte)0x01,front_src_ip,(new_src_port==conn.srcPort)?(short)0:new_src_port,(short)0);
 			forwardPacket2OtherNet(sw,(OFPacketIn)msg, nc_mac_address,nw_ip_address,
 					IPv4.toIPv4AddressBytes(conn.getDstIP()),((OFPacketIn)msg).getInPort(), 
-					eth,(byte)0x02, end_src_ip,(new_src_port==conn.srcPort)?(short)0:new_src_port,(short)0);		
+					eth,(byte)0x02, end_src_ip,(new_src_port==conn.srcPort)?(short)0:new_src_port,(short)0);
+			//test
+			forwardPacket2OtherNet(sw,(OFPacketIn)msg, nc_mac_address,IPv4.toIPv4AddressBytes(conn.getSrcIP()),
+					IPv4.toIPv4AddressBytes(conn.getDstIP()),((OFPacketIn)msg).getInPort(), 
+					eth,(byte)0x01,front_src_ip,(new_src_port==conn.srcPort)?(short)0:new_src_port,(short)0);
 			
 			
 			/* outside->nw rule */
@@ -1457,7 +1463,6 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 		
 		OFActionOutput action_out_port;
 		actionLen += OFActionOutput.MINIMUM_LENGTH;
-		actionLen = 300;
 		if(pktInMsg.getInPort() == outSwPort){
 			action_out_port = new OFActionOutput(OFPort.OFPP_IN_PORT.getValue());
 		}
@@ -1465,6 +1470,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 			action_out_port = new OFActionOutput(outSwPort);
 		}
 		actions.add(action_out_port);
+		
 		pktOut.setActions(actions);
 		pktOut.setActionsLength((short)actionLen);
 		
