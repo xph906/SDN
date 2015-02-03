@@ -263,8 +263,13 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 				droppedCounter++;
 				return Command.CONTINUE;
 			}
-			
+			int x = 2;
+			int y = 1;
+			y += 1;
 			if(processedByOtherHoneynets(conn, ((OFPacketIn)msg).getInPort(), sw,msg, eth) ){
+				return Command.CONTINUE;
+			}
+			else if(x==y){
 				return Command.CONTINUE;
 			}
 			
@@ -1805,7 +1810,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 		actions.add(action_out_port);
 		rule.setActions(actions);
 		rule.setLength((short) (OFFlowMod.MINIMUM_LENGTH + actionLen));
-		System.err.println("done installing rule:"+rule);
+		//System.err.println("done installing rule:"+rule);
 		try {
 			sw.write(rule, null);
 			sw.flush();
