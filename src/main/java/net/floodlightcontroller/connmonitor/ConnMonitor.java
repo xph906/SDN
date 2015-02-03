@@ -1465,8 +1465,16 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 		actions.add(action_out_port);
 		pktOut.setActions(actions);
 		pktOut.setActionsLength((short)actionLen);
-	    
+		
+		if (pktOut.getBufferId() == OFPacketOut.BUFFER_ID_NONE) 
+		{
+			byte[] packetData = pktInMsg.getPacketData();
+            pktOut.setLength((short)(OFPacketOut.MINIMUM_LENGTH
+                    + pktOut.getActionsLength() + packetData.length));
+            pktOut.setPacketData(packetData);   
+		}
         // Set data if it is included in the packet in but buffer id is NONE
+		/*
         if (pktOut.getBufferId() == OFPacketOut.BUFFER_ID_NONE) 
         {
         	//System.err.println("debug BUFFER_ID_NONE");
@@ -1486,37 +1494,20 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
             	byte[] ip_pkt_data = Arrays.copyOfRange(packetData,
             				ChecksumCalc.ETHERNET_HEADER_LEN,ChecksumCalc.ETHERNET_HEADER_LEN + ip_len);
             	
-            	/* Modify DSCP */
             	byte ecn =  (byte)((int)(ip_pkt_data[1])&0x03);	
             	dscp = (byte)(dscp << 2);
             	ip_pkt_data[1] = (byte)((dscp|ecn)&0xff);
             	dscp = (byte)((int)(ip_pkt_data[1])>>>2);
             	ecn =  (byte)((int)(ip_pkt_data[1])&0x03);
             	
-            	/* Modify ID */
             	ip_pkt_data[4] = (byte)((id>>>8) & 0xff);
             	ip_pkt_data[5] = (byte)(id & 0xff);
-            	
-            	/*if(srcIP != null){
-            		ip_pkt_data[12] = srcIP[0];
-            		ip_pkt_data[13] = srcIP[1];
-            		ip_pkt_data[14] = srcIP[2];
-            		ip_pkt_data[15] = srcIP[3];
-            	}
-            	if(dstIP != null){
-            		ip_pkt_data[16] = dstIP[0];
-            		ip_pkt_data[17] = dstIP[1];
-            		ip_pkt_data[18] = dstIP[2];
-            		ip_pkt_data[19] = dstIP[3];
-            	}*/
-            		
-            	
+    
             	//System.err.println("NEW DSCP:"+byteToHexString(dscp)+" ID:"+shortToHexString(ecn));
             	if(ChecksumCalc.reCalcAndUpdateIPPacketChecksum(ip_pkt_data, ip_header_len)==false){
             		System.err.println("error calculating ip pkt checksum");
             	}
             	
-            	/* install Ethernet header */
             	byte[] new_ether_data = new byte[packet_len];
             	for(int i=0; i<ChecksumCalc.ETHERNET_HEADER_LEN; i++)
             		new_ether_data[i] = packetData[i];
@@ -1545,7 +1536,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
         	System.err.println("ERROR BUFFER ID IS NOT NONE");
         	pktOut.setLength((short)(OFPacketOut.MINIMUM_LENGTH
                     + pktOut.getActionsLength()));
-        }
+        }*/
         
         try 
         {
@@ -1556,6 +1547,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
         }
         catch (IOException e) 
         {
+        	System.err.println("failed writing packet out:"+e);
         	logger.LogError("failed forward packet");
  			return false;
         }
