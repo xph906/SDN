@@ -889,21 +889,20 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 			short front_src_ip = (short)( (item.getRemote_ip()>>>16) & 0x0000ffff);
 			short end_src_ip = (short)(item.getRemote_ip() & 0x0000ffff);
 			
-			System.err.println("WOWOWOWOWOWOWOWO");
+			/*System.err.println("WOWOWOWOWOWOWOWO");
 			forwardPacket2OtherNet(sw,(OFPacketIn)msg, nc_mac_address,nw_ip_address,
 					IPv4.toIPv4AddressBytes(conn.getDstIP()),((OFPacketIn)msg).getInPort(), 
 					eth,(byte)0x01,front_src_ip,conn.dstPort, conn.srcPort);
-			System.err.println("YYYYYYYYYYYYYYYY");
-			/*
+			System.err.println("YYYYYYYYYYYYYYYY");*/
+			
 			 if(packet instanceof IPv4){
 				IPv4 ip_pkt = (IPv4)packet;
 				// FIXME: information is stored in ecn because dscn will be striped!!! 
 				byte ecn = ip_pkt.getDiffServ();
 				if(ecn == 0x01){
 					System.err.println("missing 0x04 setup packet "+((OFPacketIn)msg).getInPort());
-					boolean rs = forwardPacket2OtherNet(sw, (OFPacketIn)msg, nw_ip_address,
-							IPv4.toIPv4AddressBytes(nw.getIp()), IPv4.toIPv4AddressBytes(conn.dstIP),
-							((OFPacketIn)msg).getInPort(), 
+					boolean rs = forwardPacket2OtherNet(sw,(OFPacketIn)msg, nc_mac_address,nw_ip_address,
+							IPv4.toIPv4AddressBytes(conn.getDstIP()),((OFPacketIn)msg).getInPort(), 
 							eth, (byte)0x01, front_src_ip, 
 							conn.dstPort, conn.srcPort); 
 					System.err.println("done resending 0x04 setup packet "+rs);
@@ -911,9 +910,8 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 				}
 				else if(ecn == 0x02){
 					System.err.println("missing 0x08 setup packet "+((OFPacketIn)msg).getInPort());
-					boolean rs = forwardPacket2OtherNet(sw, (OFPacketIn)msg, nw_ip_address,
-							IPv4.toIPv4AddressBytes(nw.getIp()), IPv4.toIPv4AddressBytes(conn.dstIP),
-							((OFPacketIn)msg).getInPort(), 
+					boolean rs = forwardPacket2OtherNet(sw,(OFPacketIn)msg, nc_mac_address,nw_ip_address,
+							IPv4.toIPv4AddressBytes(conn.getDstIP()),((OFPacketIn)msg).getInPort(),  
 							eth, (byte)0x02, end_src_ip, 
 							conn.dstPort, conn.srcPort); 
 					System.err.println("done resending 0x08 setup packet "+rs);
@@ -921,21 +919,16 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 				}
 				else if(ecn == 0x03){
 					System.err.println("missing 0x0c setup packet "+((OFPacketIn)msg).getInPort());
-					boolean rs1 = forwardPacket2OtherNet(sw, (OFPacketIn)msg, nw_ip_address,
-							IPv4.toIPv4AddressBytes(nw.getIp()), IPv4.toIPv4AddressBytes(conn.dstIP),
-							((OFPacketIn)msg).getInPort(), 
+					boolean rs1 = forwardPacket2OtherNet(sw,(OFPacketIn)msg, nc_mac_address,nw_ip_address,
+							IPv4.toIPv4AddressBytes(conn.getDstIP()),((OFPacketIn)msg).getInPort(), 
 							eth, (byte)0x01, front_src_ip, 
 							conn.dstPort, conn.srcPort); 
-					boolean rs2 = forwardPacket2OtherNet(sw, (OFPacketIn)msg, nw_ip_address,
-							IPv4.toIPv4AddressBytes(nw.getIp()), IPv4.toIPv4AddressBytes(conn.dstIP),
-							((OFPacketIn)msg).getInPort(), 
+					boolean rs2 = forwardPacket2OtherNet(sw,(OFPacketIn)msg, nc_mac_address,nw_ip_address,
+							IPv4.toIPv4AddressBytes(conn.getDstIP()),((OFPacketIn)msg).getInPort(), 
 							eth, (byte)0x02, end_src_ip, 
 							conn.dstPort, conn.srcPort); 
-					boolean rs = forwardPacket(sw, (OFPacketIn)msg, nw_ip_address,
-							test_ip_address_out,test_ip_address_in,
-							((OFPacketIn)msg).getInPort(), eth);
-					System.err.println("done resending 0x04 setup packet "+rs);
-					//System.err.println("done resending 0x08 setup packet "+rs2);
+					System.err.println("done resending 0x04 setup packet "+rs1);
+					System.err.println("done resending 0x08 setup packet "+rs2);
 					return true;
 				}
 				else{
@@ -947,7 +940,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 					//System.err.println(packet.serialize().length+" "+bytesToHexString(packet.serialize()));			
 					System.err.println("  dscn: "+ecn);
 				}
-			}*/
+			}
 			System.err.println("    original src:"+IPv4.fromIPv4Address(item.getSrc_ip()));
 			/* nw->outside rule */
 			OFMatch match = new OFMatch();	
