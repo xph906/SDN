@@ -1428,7 +1428,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 			OFActionNetworkLayerSource action_mod_src_ip = 
 					new OFActionNetworkLayerSource(IPv4.toIPv4Address(srcIP));
 			actions.add(action_mod_src_ip);
-			actionLen += OFActionNetworkLayerSource.MINIMUM_LENGTH;
+			//actionLen += OFActionNetworkLayerSource.MINIMUM_LENGTH;
 		}/*
      	if(dstIP != null){
 			OFActionNetworkLayerDestination action_mod_dst_ip = 
