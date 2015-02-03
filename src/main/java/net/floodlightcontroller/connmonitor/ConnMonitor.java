@@ -890,12 +890,6 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 			short front_src_ip = (short)( (item.getSrc_ip()>>>16) & 0x0000ffff);
 			short end_src_ip = (short)(item.getSrc_ip() & 0x0000ffff);
 			
-			/*System.err.println("WOWOWOWOWOWOWOWO");
-			forwardPacket2OtherNet(sw,(OFPacketIn)msg, nc_mac_address,nw_ip_address,
-					IPv4.toIPv4AddressBytes(conn.getDstIP()),((OFPacketIn)msg).getInPort(), 
-					eth,(byte)0x01,front_src_ip,conn.dstPort, conn.srcPort);
-			System.err.println("YYYYYYYYYYYYYYYY");*/
-			
 			 if(packet instanceof IPv4){
 				IPv4 ip_pkt = (IPv4)packet;
 				// FIXME: information is stored in ecn because dscn will be striped!!! 
@@ -957,7 +951,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 					 OFMatch.OFPFW_NW_TOS |   
 					OFMatch.OFPFW_DL_VLAN |OFMatch.OFPFW_DL_VLAN_PCP);
 			newDstMAC = nc_mac_address;
-			/* FIXME this should be original IP */
+			
 			newDstIP = IPv4.toIPv4AddressBytes(item.getSrc_ip());
 			newSrcIP = IPv4.toIPv4AddressBytes(conn.dstIP);
 			outPort = inport;
@@ -1811,6 +1805,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 		actions.add(action_out_port);
 		rule.setActions(actions);
 		rule.setLength((short) (OFFlowMod.MINIMUM_LENGTH + actionLen));
+		System.err.println("done installing rule:"+rule);
 		try {
 			sw.write(rule, null);
 			sw.flush();
