@@ -1423,19 +1423,19 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
      		actions.add(action_mod_dst_mac);
      		actionLen += OFActionDataLayerDestination.MINIMUM_LENGTH;
      	}
-     	/*
+     	
      	if(srcIP != null){
 			OFActionNetworkLayerSource action_mod_src_ip = 
 					new OFActionNetworkLayerSource(IPv4.toIPv4Address(srcIP));
 			actions.add(action_mod_src_ip);
 			actionLen += OFActionNetworkLayerSource.MINIMUM_LENGTH;
-		}*/
+		}/*
      	if(dstIP != null){
 			OFActionNetworkLayerDestination action_mod_dst_ip = 
 					new OFActionNetworkLayerDestination(IPv4.toIPv4Address(dstIP));
 			actions.add(action_mod_dst_ip);
 			actionLen += OFActionNetworkLayerDestination.MINIMUM_LENGTH;
-		}
+		}*/
 		if(newSrcPort != 0){
 			OFActionTransportLayerSource action_mod_src_tp =
 					new OFActionTransportLayerSource(newSrcPort);
