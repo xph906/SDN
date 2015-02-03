@@ -856,6 +856,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 		int rs = port & 0x0000ffff;
 		return rs;
 	}
+	
 	private boolean processedByOtherHoneynets(Connection conn, short inport,IOFSwitch sw, OFMessage msg,Ethernet eth ){
 		long switch_id = sw.getId();
 		
@@ -884,6 +885,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 				return true;
 			}
 			IPacket packet = eth.getPayload();
+			bytesToHexString(packet.serialize());
 			if(packet instanceof IPv4){
 				IPv4 ip_pkt = (IPv4)packet;
 				byte dscn = ip_pkt.getDiffServ();
@@ -897,6 +899,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 					System.err.println("missing 0x0c setup packet");
 				}
 				else{
+					
 					System.err.println("dscn: "+dscn);
 				}
 			}
