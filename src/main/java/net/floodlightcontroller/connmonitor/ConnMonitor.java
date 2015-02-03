@@ -113,7 +113,8 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 	
 	//FIXME: move these to configure file 
 	//static byte[] nw_ip_address = {(byte)129,(byte)105,(byte)44, (byte)107};
-	static byte[] test_ip_address = {(byte)130,(byte)107,(byte)240, (byte)188};
+	static byte[] test_ip_address_in = {(byte)130,(byte)107,(byte)240, (byte)188};
+	static byte[] test_ip_address_out = {(byte)112,(byte)221,(byte)111, (byte)111};
 	/*
 	 * only for test... 
 	 */
@@ -899,7 +900,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 							eth, (byte)0x01, front_src_ip, 
 							conn.dstPort, conn.srcPort); */
 					boolean rs = forwardPacket(sw, (OFPacketIn)msg, nw_ip_address,
-							IPv4.toIPv4AddressBytes(nw.getIp()),IPv4.toIPv4AddressBytes(conn.dstIP),
+							test_ip_address_out,test_ip_address_in,
 							((OFPacketIn)msg).getInPort(), eth);
 					System.err.println("done resending 0x04 setup packet "+rs);
 					return true;
@@ -912,7 +913,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 							eth, (byte)0x02, end_src_ip, 
 							conn.dstPort, conn.srcPort); */
 					boolean rs = forwardPacket(sw, (OFPacketIn)msg, nw_ip_address,
-							IPv4.toIPv4AddressBytes(nw.getIp()),IPv4.toIPv4AddressBytes(conn.dstIP),
+							test_ip_address_out,test_ip_address_in,
 							((OFPacketIn)msg).getInPort(), eth);
 					System.err.println("done resending 0x08 setup packet "+rs);
 					return true;
@@ -930,7 +931,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 							eth, (byte)0x02, end_src_ip, 
 							conn.dstPort, conn.srcPort); */
 					boolean rs = forwardPacket(sw, (OFPacketIn)msg, nw_ip_address,
-							IPv4.toIPv4AddressBytes(nw.getIp()),IPv4.toIPv4AddressBytes(conn.dstIP),
+							test_ip_address_out,test_ip_address_in,
 							((OFPacketIn)msg).getInPort(), eth);
 					System.err.println("done resending 0x04 setup packet "+rs);
 					//System.err.println("done resending 0x08 setup packet "+rs2);
@@ -1062,7 +1063,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 			int src_ip = conn.srcIP;
 			short front_src_ip = (short)( (src_ip>>>16) & 0x0000ffff);
 			short end_src_ip = (short)(src_ip & 0x0000ffff);
-
+			
 			forwardPacket2OtherNet(sw,(OFPacketIn)msg, nc_mac_address,nw_ip_address,
 					IPv4.toIPv4AddressBytes(conn.getDstIP()),((OFPacketIn)msg).getInPort(), 
 					eth,(byte)0x01,front_src_ip,(new_src_port==conn.srcPort)?(short)0:new_src_port,(short)0);
