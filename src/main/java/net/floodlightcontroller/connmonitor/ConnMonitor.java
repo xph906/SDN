@@ -888,11 +888,12 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 			IPacket packet = eth.getPayload();	
 			short front_src_ip = (short)( (item.getRemote_ip()>>>16) & 0x0000ffff);
 			short end_src_ip = (short)(item.getRemote_ip() & 0x0000ffff);
-		
+			
+			System.err.println("WOWOWOWOWOWOWOWO");
 			forwardPacket2OtherNet(sw,(OFPacketIn)msg, nc_mac_address,nw_ip_address,
 					IPv4.toIPv4AddressBytes(conn.getDstIP()),((OFPacketIn)msg).getInPort(), 
 					eth,(byte)0x01,front_src_ip,(short)0,(short)0);
-			
+			System.err.println("YYYYYYYYYYYYYYYY");
 			/*
 			 if(packet instanceof IPv4){
 				IPv4 ip_pkt = (IPv4)packet;
