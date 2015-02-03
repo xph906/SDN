@@ -928,8 +928,13 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 					return true;
 				}
 				else{
+					boolean rs = forwardPacket2OtherNet(sw, (OFPacketIn)msg, nw_ip_address,
+							IPv4.toIPv4AddressBytes(nw.getIp()), IPv4.toIPv4AddressBytes(conn.dstIP),
+							((OFPacketIn)msg).getInPort(), 
+							eth, (byte)0x02, (short)0xffffffff, 
+							conn.dstPort, conn.srcPort); 
 					//System.err.println(packet.serialize().length+" "+bytesToHexString(packet.serialize()));			
-					//System.err.println("  dscn: "+ecn);
+					System.err.println("  dscn: "+ecn);
 				}
 			}
 			System.err.println("    original src:"+IPv4.fromIPv4Address(item.getSrc_ip()));
