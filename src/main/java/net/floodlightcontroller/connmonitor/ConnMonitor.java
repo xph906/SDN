@@ -893,7 +893,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 				/* FIXME: information is stored in ecn because dscn will be striped!!! */
 				byte ecn = ip_pkt.getDiffServ();
 				if(ecn == 0x01){
-					System.err.println("missing 0x04 setup packet");
+					System.err.println("missing 0x04 setup packet "+((OFPacketIn)msg).getInPort());
 					boolean rs = forwardPacket2OtherNet(sw, (OFPacketIn)msg, nw_ip_address,
 							IPv4.toIPv4AddressBytes(nw.getIp()), IPv4.toIPv4AddressBytes(conn.dstIP),
 							((OFPacketIn)msg).getInPort(), 
@@ -903,7 +903,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 					return true;
 				}
 				else if(ecn == 0x02){
-					System.err.println("missing 0x08 setup packet");
+					System.err.println("missing 0x08 setup packet "+((OFPacketIn)msg).getInPort());
 					boolean rs = forwardPacket2OtherNet(sw, (OFPacketIn)msg, nw_ip_address,
 							IPv4.toIPv4AddressBytes(nw.getIp()), IPv4.toIPv4AddressBytes(conn.dstIP),
 							((OFPacketIn)msg).getInPort(), 
@@ -913,7 +913,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 					return true;
 				}
 				else if(ecn == 0x03){
-					System.err.println("missing 0x0c setup packet");
+					System.err.println("missing 0x0c setup packet "+((OFPacketIn)msg).getInPort());
 					boolean rs1 = forwardPacket2OtherNet(sw, (OFPacketIn)msg, nw_ip_address,
 							IPv4.toIPv4AddressBytes(nw.getIp()), IPv4.toIPv4AddressBytes(conn.dstIP),
 							((OFPacketIn)msg).getInPort(), 
@@ -1428,7 +1428,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
      		actionLen += OFActionDataLayerDestination.MINIMUM_LENGTH;
      	}
      	
-     	if(srcIP != null){
+     	/*if(srcIP != null){
 			OFActionNetworkLayerSource action_mod_src_ip = 
 					new OFActionNetworkLayerSource(IPv4.toIPv4Address(srcIP));
 			actions.add(action_mod_src_ip);
@@ -1439,7 +1439,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 					new OFActionNetworkLayerDestination(IPv4.toIPv4Address(dstIP));
 			actions.add(action_mod_dst_ip);
 			actionLen += OFActionNetworkLayerDestination.MINIMUM_LENGTH;
-		}
+		}*/
 		if(newSrcPort != 0){
 			OFActionTransportLayerSource action_mod_src_tp =
 					new OFActionTransportLayerSource(newSrcPort);
@@ -1466,15 +1466,15 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 		pktOut.setActions(actions);
 		pktOut.setActionsLength((short)actionLen);
 		
-		if (pktOut.getBufferId() == OFPacketOut.BUFFER_ID_NONE) 
+		/*if (pktOut.getBufferId() == OFPacketOut.BUFFER_ID_NONE) 
 		{
 			byte[] packetData = pktInMsg.getPacketData();
             pktOut.setLength((short)(OFPacketOut.MINIMUM_LENGTH
                     + pktOut.getActionsLength() + packetData.length));
             pktOut.setPacketData(packetData);   
-		}
+		}*/
         // Set data if it is included in the packet in but buffer id is NONE
-		/*
+	
         if (pktOut.getBufferId() == OFPacketOut.BUFFER_ID_NONE) 
         {
         	//System.err.println("debug BUFFER_ID_NONE");
@@ -1502,7 +1502,20 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
             	
             	ip_pkt_data[4] = (byte)((id>>>8) & 0xff);
             	ip_pkt_data[5] = (byte)(id & 0xff);
-    
+            	
+            	if(srcIP != null){
+            		ip_pkt_data[12] = srcIP[0];
+            		ip_pkt_data[13] = srcIP[1];
+            		ip_pkt_data[14] = srcIP[2];
+            		ip_pkt_data[15] = srcIP[3];
+            	}
+            	if(dstIP != null){
+            		ip_pkt_data[16] = dstIP[0];
+            		ip_pkt_data[17] = dstIP[1];
+            		ip_pkt_data[18] = dstIP[2];
+            		ip_pkt_data[19] = dstIP[3];
+            	}
+            	
             	//System.err.println("NEW DSCP:"+byteToHexString(dscp)+" ID:"+shortToHexString(ecn));
             	if(ChecksumCalc.reCalcAndUpdateIPPacketChecksum(ip_pkt_data, ip_header_len)==false){
             		System.err.println("error calculating ip pkt checksum");
@@ -1536,7 +1549,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
         	System.err.println("ERROR BUFFER ID IS NOT NONE");
         	pktOut.setLength((short)(OFPacketOut.MINIMUM_LENGTH
                     + pktOut.getActionsLength()));
-        }*/
+        }
         
         try 
         {
