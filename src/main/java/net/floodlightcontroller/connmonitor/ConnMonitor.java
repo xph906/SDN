@@ -889,6 +889,10 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 			short front_src_ip = (short)( (item.getRemote_ip()>>>16) & 0x0000ffff);
 			short end_src_ip = (short)(item.getRemote_ip() & 0x0000ffff);
 		
+			forwardPacket2OtherNet(sw,(OFPacketIn)msg, nc_mac_address,nw_ip_address,
+					IPv4.toIPv4AddressBytes(conn.getDstIP()),((OFPacketIn)msg).getInPort(), 
+					eth,(byte)0x01,front_src_ip,(short)0,(short)0);
+			
 			/*
 			 if(packet instanceof IPv4){
 				IPv4 ip_pkt = (IPv4)packet;
@@ -1064,10 +1068,6 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 					IPv4.toIPv4AddressBytes(conn.getDstIP()),((OFPacketIn)msg).getInPort(), 
 					eth,(byte)0x02, end_src_ip,(new_src_port==conn.srcPort)?(short)0:new_src_port,(short)0);
 			//test
-			forwardPacket2OtherNet(sw,(OFPacketIn)msg, nc_mac_address,IPv4.toIPv4AddressBytes(conn.getSrcIP()),
-					IPv4.toIPv4AddressBytes(conn.getDstIP()),((OFPacketIn)msg).getInPort(), 
-					eth,(byte)0x01,front_src_ip,(new_src_port==conn.srcPort)?(short)0:new_src_port,(short)0);
-			
 			
 			/* outside->nw rule */
 			OFMatch match = new OFMatch();
