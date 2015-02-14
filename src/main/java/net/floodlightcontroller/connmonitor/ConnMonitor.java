@@ -557,8 +557,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 			 */
 			int dstIP = removedMsg.getMatch().getNetworkDestination();
 			int srcIP = removedMsg.getMatch().getNetworkSource();
-			for(Honeynet net : Honeynet.getAllHoneynets()){
-				
+			for(Honeynet net : Honeynet.getAllHoneynets()){	
 				String name = net.getName();
 				Honeynet.SubnetMask mask = net.getMask();
 				System.err.println("remove flows: test for honeynet "+name+" mask:"+mask+" src_ip:"+IPv4.fromIPv4Address(srcIP)+" dst_ip:"+IPv4.fromIPv4Address(dstIP));
@@ -578,7 +577,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 					}
 					item.setState(ForwardFLowItemState.WAIT_FOR_DEL_ACK);
 					deleteForwardRule(sw,item);
-					informNWToDestroyFlowInfo(item);
+					informRemoteToDestroyFlowInfo(item,name);
 					System.err.println("    done handling forward rules removed msg "+cookie);
 					return Command.CONTINUE;
 				}
@@ -852,8 +851,8 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 		}
 	}
 	
-	private void informNWToDestroyFlowInfo(ForwardFlowItem item){
-		System.err.println("    Inform NW to Destroy Flow Info");
+	private void informRemoteToDestroyFlowInfo(ForwardFlowItem item, String name){
+		System.err.println("    Inform "+name+" to Destroy Flow Info");
 	}
 	private int positivePort(short port){
 		int rs = port & 0x0000ffff;
@@ -864,231 +863,228 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 		long switch_id = sw.getId();
 		
 		/* NW */
-		Honeynet nw = Honeynet.getHoneynet("nw");
-		if(nw==null){
-			System.err.println("No NW honeynet!");
-			return false;
-		}
-		Honeynet.SubnetMask mask = nw.getMask();
-		byte[] nw_ip_address = IPv4.toIPv4AddressBytes(nw.getIp());
-		byte[] newDstMAC = null;
-		byte[] newDstIP = null;
-		byte[] newSrcIP = null;
-		short outPort = 0;
-		if((conn.srcIP==nw.getIp()) && (Honeynet.inSubnet(mask,conn.dstIP))){
-			//130.107.244.244:3357-129.105.44.107:80
-			String key = ForwardFlowItem.generateForwardFlowTableKey(conn.dstIP, conn.dstPort, conn.srcIP, conn.srcPort);
-			System.err.println("SENT FROM NW src:"+IPv4.fromIPv4Address(conn.srcIP)+" dst:"+IPv4.fromIPv4Address(conn.dstIP) +
-								" flow srcport:"+positivePort(conn.srcPort) + 
-								" flow dstport:"+positivePort(conn.dstPort)+"\n    key:"+key);
-			
-			ForwardFlowItem item = forwardFlowTable.get(key);
-			if(item==null){
-				System.err.println("    can't find this flow. give up!!!");
-				return true;
+		for(Honeynet thirdPartyHoneynet : Honeynet.getAllHoneynets()){
+			//Honeynet thirdPartyHoneynet = Honeynet.getHoneynet("nw");
+			if(thirdPartyHoneynet ==null){
+				System.err.println("No honeynet!");
+				return false;
 			}
-			IPacket packet = eth.getPayload();	
-			
-			short front_src_ip = (short)( (item.getSrc_ip()>>>16) & 0x0000ffff);
-			short end_src_ip = (short)(item.getSrc_ip() & 0x0000ffff);
-			
-			 if(packet instanceof IPv4){
-				IPv4 ip_pkt = (IPv4)packet;
-				// FIXME: information is stored in ecn because dscn will be striped!!! 
-				byte ecn = ip_pkt.getDiffServ();
-				if(ecn == 0x01){
-					System.err.println("missing 0x04 setup packet "+((OFPacketIn)msg).getInPort());
-					boolean rs = forwardPacket2OtherNet(sw,(OFPacketIn)msg, nc_mac_address,nw_ip_address,
-							IPv4.toIPv4AddressBytes(conn.getDstIP()),((OFPacketIn)msg).getInPort(), 
-							eth, (byte)0x01, front_src_ip, 
-							conn.dstPort, conn.srcPort); 
-					System.err.println("done resending 0x04 setup packet "+rs);
+			Honeynet.SubnetMask mask = thirdPartyHoneynet.getMask();
+			String name = thirdPartyHoneynet.getName();
+			byte[] remoteIPAddress = IPv4.toIPv4AddressBytes(thirdPartyHoneynet.getIp());
+			byte[] newDstMAC = null;
+			byte[] newDstIP = null;
+			byte[] newSrcIP = null;
+			short outPort = 0;
+			/*from thirdPartyHoneynet to SRI */
+			if((conn.srcIP==thirdPartyHoneynet.getIp()) && (Honeynet.inSubnet(mask,conn.dstIP))){
+				//130.107.244.244:3357-129.105.44.107:80
+				String key = ForwardFlowItem.generateForwardFlowTableKey(conn.dstIP, conn.dstPort, conn.srcIP, conn.srcPort);
+				System.err.println("SENT FROM "+name+" src:"+IPv4.fromIPv4Address(conn.srcIP)+" dst:"+IPv4.fromIPv4Address(conn.dstIP) +
+									" flow srcport:"+positivePort(conn.srcPort) + 
+									" flow dstport:"+positivePort(conn.dstPort)+"\n    key:"+key);
+				
+				ForwardFlowItem item = forwardFlowTable.get(key);
+				if(item==null){
+					System.err.println("    can't find this flow. give up!!!");
 					return true;
 				}
-				else if(ecn == 0x02){
-					System.err.println("missing 0x08 setup packet "+((OFPacketIn)msg).getInPort());
-					boolean rs = forwardPacket2OtherNet(sw,(OFPacketIn)msg, nc_mac_address,nw_ip_address,
-							IPv4.toIPv4AddressBytes(conn.getDstIP()),((OFPacketIn)msg).getInPort(),  
-							eth, (byte)0x02, end_src_ip, 
-							conn.dstPort, conn.srcPort); 
-					System.err.println("done resending 0x08 setup packet "+rs);
-					return true;
-				}
-				else if(ecn == 0x03){
-					System.err.println("missing 0x0c setup packet "+((OFPacketIn)msg).getInPort());
-					boolean rs1 = forwardPacket2OtherNet(sw,(OFPacketIn)msg, nc_mac_address,nw_ip_address,
-							IPv4.toIPv4AddressBytes(conn.getDstIP()),((OFPacketIn)msg).getInPort(), 
-							eth, (byte)0x01, front_src_ip, 
-							conn.dstPort, conn.srcPort); 
-					boolean rs2 = forwardPacket2OtherNet(sw,(OFPacketIn)msg, nc_mac_address,nw_ip_address,
-							IPv4.toIPv4AddressBytes(conn.getDstIP()),((OFPacketIn)msg).getInPort(), 
-							eth, (byte)0x02, end_src_ip, 
-							conn.dstPort, conn.srcPort); 
-					System.err.println("done resending 0x04 setup packet "+rs1);
-					System.err.println("done resending 0x08 setup packet "+rs2);
-					return true;
-				}
-				else{
-					//boolean rs = forwardPacket2OtherNet(sw, (OFPacketIn)msg, nw_ip_address,
-					//		IPv4.toIPv4AddressBytes(nw.getIp()), IPv4.toIPv4AddressBytes(conn.dstIP),
-					//		((OFPacketIn)msg).getInPort(), 
-					//		eth, (byte)0x02, (short)0xffffffff, 
-					//		conn.dstPort, conn.srcPort); 
-					//System.err.println(packet.serialize().length+" "+bytesToHexString(packet.serialize()));			
-					System.err.println("  dscn: "+ecn);
-				}
-			}
-			System.err.println("    original src:"+IPv4.fromIPv4Address(item.getSrc_ip()));
-			/* nw->outside rule */
-			OFMatch match = new OFMatch();	
-			match.setDataLayerType((short)0x0800);
-			match.setNetworkDestination(conn.dstIP);
-			match.setNetworkSource(IPv4.toIPv4Address(nw_ip_address));
-			match.setTransportDestination(conn.dstPort);
-			match.setTransportSource(conn.srcPort);
-			match.setInputPort(inport);
-			match.setNetworkProtocol(conn.getProtocol());
-			match.setWildcards(	
-					OFMatch.OFPFW_DL_DST | OFMatch.OFPFW_DL_SRC | 	
-					 OFMatch.OFPFW_NW_TOS |   
-					OFMatch.OFPFW_DL_VLAN |OFMatch.OFPFW_DL_VLAN_PCP);
-			newDstMAC = nc_mac_address;
-			
-			newDstIP = IPv4.toIPv4AddressBytes(item.getSrc_ip());
-			newSrcIP = IPv4.toIPv4AddressBytes(conn.dstIP);
-			outPort = inport;
-			short new_dst_port = 0;
-			if(item.getSrc_port() !=item.getNew_src_port() )
-				new_dst_port = item.getSrc_port();
-			System.err.println("    new_dst_port:"+positivePort(new_dst_port));
-			boolean rs = installPathForFlow(switch_id,inport,match,OFFlowMod.OFPFF_SEND_FLOW_REM,
-											item.getFlow_cookie(), newDstMAC,newDstIP,newSrcIP,
-											(short)0, new_dst_port,outPort,IDLE_TIMEOUT,HARD_TIMEOUT,HIGH_PRIORITY);
-			forwardPacket(sw,(OFPacketIn)msg, nc_mac_address,newDstIP,newSrcIP,outPort);
-			if (rs == false){
-				System.err.println("    Fail setting ruls for sending traffic to NW");
-			}
-			
-			return true;
-		}
-		else if(Honeynet.inSubnet(mask,conn.dstIP)){
-			/*For test
-			int special_ip = IPv4.toIPv4Address("130.107.244.244");
-			if((conn.dstPort != (short)80)|| (conn.dstIP != special_ip) )
-				return true;
-			*/
-			
-			//130.107.244.244:3357-129.105.44.107:80
-			String key = ForwardFlowItem.generateForwardFlowTableKey(conn.dstIP, conn.srcPort, nw.getIp(), conn.dstPort);
-			System.err.println("SENT TO NW src:"+IPv4.fromIPv4Address(conn.srcIP)+" dst:"+IPv4.fromIPv4Address(conn.dstIP) +
-					" flow srcport:"+positivePort(conn.srcPort) + 
-					" flow dstport:"+positivePort(conn.dstPort)+"\n    key:"+key);
-			short new_src_port = conn.srcPort;
-			long cookie = 0;
-			if(forwardFlowTable.containsKey(key)) /* table item exists*/
-			{	
-				System.err.println("    entry exists for this flow:"+key);
-				int count = 0;
-				while(true){
-					if(count > 5){
-						System.err.println("        can't find available port: give up!!!");
+				IPacket packet = eth.getPayload();	
+				
+				short front_src_ip = (short)( (item.getSrc_ip()>>>16) & 0x0000ffff);
+				short end_src_ip = (short)(item.getSrc_ip() & 0x0000ffff);
+				
+				 if(packet instanceof IPv4){
+					IPv4 ip_pkt = (IPv4)packet;
+					// FIXME: information is stored in ecn because dscn will be striped!!! 
+					byte ecn = ip_pkt.getDiffServ();
+					if(ecn == 0x01){
+						System.err.println("missing 0x04 setup packet "+((OFPacketIn)msg).getInPort());
+						boolean rs = forwardPacket2OtherNet(sw,(OFPacketIn)msg, nc_mac_address,remoteIPAddress,
+								IPv4.toIPv4AddressBytes(conn.getDstIP()),((OFPacketIn)msg).getInPort(), 
+								eth, (byte)0x01, front_src_ip, 
+								conn.dstPort, conn.srcPort); 
+						System.err.println("done resending 0x04 setup packet "+rs);
 						return true;
 					}
-					count++;
-					key = ForwardFlowItem.generateForwardFlowTableKey(conn.dstIP, new_src_port, nw.getIp(), conn.dstPort);
-					ForwardFlowItem item = forwardFlowTable.get(key);
-					if((item==null) || (item.getState()==ForwardFlowItem.ForwardFLowItemState.FREE)){
-						System.err.println("        flow entry is ready for replacement");
-						item = new ForwardFlowItem(conn.srcIP,conn.srcPort,conn.dstIP,conn.dstPort,new_src_port,(long)HARD_TIMEOUT,
-													conn.getProtocol(),nw.getIp());
-						cookie = forwardFlowTable.put(key, item);
-						break;
+					else if(ecn == 0x02){
+						System.err.println("missing 0x08 setup packet "+((OFPacketIn)msg).getInPort());
+						boolean rs = forwardPacket2OtherNet(sw,(OFPacketIn)msg, nc_mac_address,remoteIPAddress,
+								IPv4.toIPv4AddressBytes(conn.getDstIP()),((OFPacketIn)msg).getInPort(),  
+								eth, (byte)0x02, end_src_ip, 
+								conn.dstPort, conn.srcPort); 
+						System.err.println("done resending 0x08 setup packet "+rs);
+						return true;
 					}
-					else if(item.getState()==ForwardFlowItem.ForwardFLowItemState.WAIT_FOR_DEL_ACK){
-						//the other thread can only delete this item
-						System.err.println("        flow entry is not ready for replacement: WAIT_FOR_DEL_ACK");
-						new_src_port = ForwardFlowItem.generateRandomPortNumber();
-						continue;
+					else if(ecn == 0x03){
+						System.err.println("missing 0x0c setup packet "+((OFPacketIn)msg).getInPort());
+						boolean rs1 = forwardPacket2OtherNet(sw,(OFPacketIn)msg, nc_mac_address,remoteIPAddress,
+								IPv4.toIPv4AddressBytes(conn.getDstIP()),((OFPacketIn)msg).getInPort(), 
+								eth, (byte)0x01, front_src_ip, 
+								conn.dstPort, conn.srcPort); 
+						boolean rs2 = forwardPacket2OtherNet(sw,(OFPacketIn)msg, nc_mac_address,remoteIPAddress,
+								IPv4.toIPv4AddressBytes(conn.getDstIP()),((OFPacketIn)msg).getInPort(), 
+								eth, (byte)0x02, end_src_ip, 
+								conn.dstPort, conn.srcPort); 
+						System.err.println("done resending 0x04 setup packet "+rs1);
+						System.err.println("done resending 0x08 setup packet "+rs2);
+						return true;
 					}
-					else if(item.getState()==ForwardFlowItem.ForwardFLowItemState.USE){
-						System.err.println("        flow entry is in USE");
-						if((conn.srcIP == item.getSrc_ip()) && (conn.srcPort==item.getSrc_port())){
-							System.err.println("            same flow, update StartingTime.");
-							if(forwardFlowTable.updateStartingtime(key,System.currentTimeMillis())==false){
-								System.err.println("            error updateStartingTime. This one is deleted by other thread");
-							}
-							cookie = item.getFlow_cookie();
+					else{
+						System.err.println("  dscn: "+ecn);
+					}
+				}
+				System.err.println("    original src:"+IPv4.fromIPv4Address(item.getSrc_ip()));
+				/* thirdPartyHoneynet->attacker rule */
+				OFMatch match = new OFMatch();	
+				match.setDataLayerType((short)0x0800);
+				match.setNetworkDestination(conn.dstIP);
+				match.setNetworkSource(IPv4.toIPv4Address(remoteIPAddress));
+				match.setTransportDestination(conn.dstPort);
+				match.setTransportSource(conn.srcPort);
+				match.setInputPort(inport);
+				match.setNetworkProtocol(conn.getProtocol());
+				match.setWildcards(	
+						OFMatch.OFPFW_DL_DST | OFMatch.OFPFW_DL_SRC | 	
+						 OFMatch.OFPFW_NW_TOS |   
+						OFMatch.OFPFW_DL_VLAN |OFMatch.OFPFW_DL_VLAN_PCP);
+				newDstMAC = nc_mac_address;
+				
+				newDstIP = IPv4.toIPv4AddressBytes(item.getSrc_ip());
+				newSrcIP = IPv4.toIPv4AddressBytes(conn.dstIP);
+				outPort = inport;
+				short new_dst_port = 0;
+				if(item.getSrc_port() !=item.getNew_src_port() )
+					new_dst_port = item.getSrc_port();
+				System.err.println("    new_dst_port:"+positivePort(new_dst_port));
+				boolean rs = installPathForFlow(switch_id,inport,match,OFFlowMod.OFPFF_SEND_FLOW_REM,
+												item.getFlow_cookie(), newDstMAC,newDstIP,newSrcIP,
+												(short)0, new_dst_port,outPort,IDLE_TIMEOUT,HARD_TIMEOUT,HIGH_PRIORITY);
+				forwardPacket(sw,(OFPacketIn)msg, nc_mac_address,newDstIP,newSrcIP,outPort);
+				if (rs == false){
+					System.err.println("    Fail setting ruls for sending traffic to NW");
+				}
+				
+				return true;
+			}//thirdPartyHoneynet->attacker
+			else if(Honeynet.inSubnet(mask,conn.dstIP)){ /*Attacker -> thirdPartyHoneynet*/
+				/*For test
+				int special_ip = IPv4.toIPv4Address("130.107.244.244");
+				if((conn.dstPort != (short)80)|| (conn.dstIP != special_ip) )
+					return true;
+				*/
+				
+				//130.107.244.244:3357-129.105.44.107:80
+				String key = ForwardFlowItem.generateForwardFlowTableKey(conn.dstIP, conn.srcPort, thirdPartyHoneynet.getIp(), conn.dstPort);
+				System.err.println("SENT TO "+name+" src:"+IPv4.fromIPv4Address(conn.srcIP)+" dst:"+IPv4.fromIPv4Address(conn.dstIP) +
+						" flow srcport:"+positivePort(conn.srcPort) + 
+						" flow dstport:"+positivePort(conn.dstPort)+"\n    key:"+key);
+				short new_src_port = conn.srcPort;
+				long cookie = 0;
+				if(forwardFlowTable.containsKey(key)) /* table item exists*/
+				{	
+					System.err.println("    entry exists for this flow:"+key);
+					int count = 0;
+					while(true){
+						if(count > 5){
+							System.err.println("        can't find available port: give up!!!");
+							return true;
+						}
+						count++;
+						key = ForwardFlowItem.generateForwardFlowTableKey(conn.dstIP, new_src_port, thirdPartyHoneynet.getIp(), conn.dstPort);
+						ForwardFlowItem item = forwardFlowTable.get(key);
+						if((item==null) || (item.getState()==ForwardFlowItem.ForwardFLowItemState.FREE)){
+							System.err.println("        flow entry is ready for replacement");
+							item = new ForwardFlowItem(conn.srcIP,conn.srcPort,conn.dstIP,conn.dstPort,new_src_port,(long)HARD_TIMEOUT,
+														conn.getProtocol(),thirdPartyHoneynet.getIp());
+							cookie = forwardFlowTable.put(key, item);
 							break;
 						}
-						else if(item.expire()){
-							forwardFlowTable.updateItemState(key, ForwardFlowItem.ForwardFLowItemState.WAIT_FOR_DEL_ACK);
-							System.err.println("            not same flow, but expired, del it asynchronously");
-							deleteForwardRule(sw,item);
-							informNWToDestroyFlowInfo(item);
-							new_src_port = ForwardFlowItem.generateRandomPortNumber();
-							continue;
-						}	
-						else{
-							System.err.println("            not same flow, switch port");
+						else if(item.getState()==ForwardFlowItem.ForwardFLowItemState.WAIT_FOR_DEL_ACK){
+							//the other thread can only delete this item
+							System.err.println("        flow entry is not ready for replacement: WAIT_FOR_DEL_ACK");
 							new_src_port = ForwardFlowItem.generateRandomPortNumber();
 							continue;
 						}
-					}	
+						else if(item.getState()==ForwardFlowItem.ForwardFLowItemState.USE){
+							System.err.println("        flow entry is in USE");
+							if((conn.srcIP == item.getSrc_ip()) && (conn.srcPort==item.getSrc_port())){
+								System.err.println("            same flow, update StartingTime.");
+								if(forwardFlowTable.updateStartingtime(key,System.currentTimeMillis())==false){
+									System.err.println("            error updateStartingTime. This one is deleted by other thread");
+								}
+								cookie = item.getFlow_cookie();
+								break;
+							}
+							else if(item.expire()){
+								forwardFlowTable.updateItemState(key, ForwardFlowItem.ForwardFLowItemState.WAIT_FOR_DEL_ACK);
+								System.err.println("            not same flow, but expired, del it asynchronously");
+								deleteForwardRule(sw,item);
+								informRemoteToDestroyFlowInfo(item,name);
+								new_src_port = ForwardFlowItem.generateRandomPortNumber();
+								continue;
+							}	
+							else{
+								System.err.println("            not same flow, switch port");
+								new_src_port = ForwardFlowItem.generateRandomPortNumber();
+								continue;
+							}
+						}	
+					}
 				}
-			}
-			else /*new item*/
-			{	/*src_ip, short src_port, int dst_ip, short dst_port, short new_src_port,  timeout*/
-				System.err.println("    no entry exists");
-				/* For test */		
-				//new_src_port = (short)(conn.srcPort+(short)100);
-				//key = ForwardFlowItem.generateForwardFlowTableKey(conn.dstIP, new_src_port, nw.getIp(), conn.dstPort);
+				else /*new item*/
+				{	/*src_ip, short src_port, int dst_ip, short dst_port, short new_src_port,  timeout*/
+					System.err.println("    no entry exists");
+					/* For test */		
+					//new_src_port = (short)(conn.srcPort+(short)100);
+					//key = ForwardFlowItem.generateForwardFlowTableKey(conn.dstIP, new_src_port, nw.getIp(), conn.dstPort);
+					
+					ForwardFlowItem item = new ForwardFlowItem(conn.srcIP,conn.srcPort,conn.dstIP,conn.dstPort,new_src_port,(long)HARD_TIMEOUT,
+									conn.getProtocol(),thirdPartyHoneynet.getIp());
+					cookie = forwardFlowTable.put(key, item);	
+				}
+				System.err.println("    send setup packets out "+conn+
+								"\n        flow srcPort:"+positivePort(conn.srcPort)+" new srcPort:"+positivePort(new_src_port));
+				int src_ip = conn.srcIP;
+				short front_src_ip = (short)( (src_ip>>>16) & 0x0000ffff);
+				short end_src_ip = (short)(src_ip & 0x0000ffff);
 				
-				ForwardFlowItem item = new ForwardFlowItem(conn.srcIP,conn.srcPort,conn.dstIP,conn.dstPort,new_src_port,(long)HARD_TIMEOUT,
-								conn.getProtocol(),nw.getIp());
-				cookie = forwardFlowTable.put(key, item);	
-			}
-			System.err.println("    send setup packets out "+conn+
-							"\n        flow srcPort:"+positivePort(conn.srcPort)+" new srcPort:"+positivePort(new_src_port));
-			int src_ip = conn.srcIP;
-			short front_src_ip = (short)( (src_ip>>>16) & 0x0000ffff);
-			short end_src_ip = (short)(src_ip & 0x0000ffff);
-			
-			forwardPacket2OtherNet(sw,(OFPacketIn)msg, nc_mac_address,nw_ip_address,
-					IPv4.toIPv4AddressBytes(conn.getDstIP()),((OFPacketIn)msg).getInPort(), 
-					eth,(byte)0x01,front_src_ip,(new_src_port==conn.srcPort)?(short)0:new_src_port,(short)0);
-			forwardPacket2OtherNet(sw,(OFPacketIn)msg, nc_mac_address,nw_ip_address,
-					IPv4.toIPv4AddressBytes(conn.getDstIP()),((OFPacketIn)msg).getInPort(), 
-					eth,(byte)0x02, end_src_ip,(new_src_port==conn.srcPort)?(short)0:new_src_port,(short)0);
-			//test
-			
-			/* outside->nw rule */
-			OFMatch match = new OFMatch();
-			match.setDataLayerType((short)0x0800);
-			match.setNetworkDestination(conn.dstIP);
-			match.setNetworkSource(conn.srcIP);
-			match.setInputPort(inport);
-			match.setTransportSource(conn.srcPort);
-			match.setTransportDestination(conn.dstPort);
-			match.setNetworkProtocol(conn.getProtocol());
-			match.setWildcards(	
-				OFMatch.OFPFW_DL_DST | OFMatch.OFPFW_DL_SRC | 	
-				OFMatch.OFPFW_NW_TOS |   
-				OFMatch.OFPFW_DL_VLAN |OFMatch.OFPFW_DL_VLAN_PCP );
-			newDstMAC = nc_mac_address;
-			newDstIP = nw_ip_address;
-			newSrcIP = IPv4.toIPv4AddressBytes(conn.dstIP);
-			outPort = inport;
-			if((new_src_port==conn.srcPort) || (new_src_port==0))
-				new_src_port = 0;
-			System.err.println("    install rule for forwording packets to NW. Match:"+match);
-			boolean rs = installPathForFlow(switch_id,inport,match,OFFlowMod.OFPFF_SEND_FLOW_REM,
-							cookie, newDstMAC,newDstIP,newSrcIP,new_src_port, (short)0,outPort,IDLE_TIMEOUT,HARD_TIMEOUT,HIGH_PRIORITY);
-			if(rs==false){
-				System.err.println("    error installing rule: Match"+match);
-			}
-			return true;
+				forwardPacket2OtherNet(sw,(OFPacketIn)msg, nc_mac_address,remoteIPAddress,
+						IPv4.toIPv4AddressBytes(conn.getDstIP()),((OFPacketIn)msg).getInPort(), 
+						eth,(byte)0x01,front_src_ip,(new_src_port==conn.srcPort)?(short)0:new_src_port,(short)0);
+				forwardPacket2OtherNet(sw,(OFPacketIn)msg, nc_mac_address,remoteIPAddress,
+						IPv4.toIPv4AddressBytes(conn.getDstIP()),((OFPacketIn)msg).getInPort(), 
+						eth,(byte)0x02, end_src_ip,(new_src_port==conn.srcPort)?(short)0:new_src_port,(short)0);
+				//test
+				
+				/* Attacker->nw rule */
+				OFMatch match = new OFMatch();
+				match.setDataLayerType((short)0x0800);
+				match.setNetworkDestination(conn.dstIP);
+				match.setNetworkSource(conn.srcIP);
+				match.setInputPort(inport);
+				match.setTransportSource(conn.srcPort);
+				match.setTransportDestination(conn.dstPort);
+				match.setNetworkProtocol(conn.getProtocol());
+				match.setWildcards(	
+					OFMatch.OFPFW_DL_DST | OFMatch.OFPFW_DL_SRC | 	
+					OFMatch.OFPFW_NW_TOS |   
+					OFMatch.OFPFW_DL_VLAN |OFMatch.OFPFW_DL_VLAN_PCP );
+				newDstMAC = nc_mac_address;
+				newDstIP = remoteIPAddress;
+				newSrcIP = IPv4.toIPv4AddressBytes(conn.dstIP);
+				outPort = inport;
+				if((new_src_port==conn.srcPort) || (new_src_port==0))
+					new_src_port = 0;
+				System.err.println("    install rule for forwording packets to NW. Match:"+match);
+				boolean rs = installPathForFlow(switch_id,inport,match,OFFlowMod.OFPFF_SEND_FLOW_REM,
+								cookie, newDstMAC,newDstIP,newSrcIP,new_src_port, (short)0,outPort,IDLE_TIMEOUT,HARD_TIMEOUT,HIGH_PRIORITY);
+				if(rs==false){
+					System.err.println("    error installing rule: Match"+match);
+				}
+				return true;
+			}// Outside -> NW field
 		}
-		
 		
 		return false;
 	}
@@ -2016,6 +2012,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 	    
 	    /* Init other honeynet */
 	    Honeynet.putHoneynet("nw", IPv4.toIPv4Address("129.105.44.107"), IPv4.toIPv4Address("130.107.240.0"), 20);
+	    Honeynet.putHoneynet("ec2", IPv4.toIPv4Address("54.213.197.234"), IPv4.toIPv4Address("130.107.224.0"), 20);
 	    
 	    flowRemovedTasks = new LinkedBlockingQueue<ForwardFlowItem>();
 		flowRemovedDoneTasks = new LinkedBlockingQueue<ForwardFlowItem>();
