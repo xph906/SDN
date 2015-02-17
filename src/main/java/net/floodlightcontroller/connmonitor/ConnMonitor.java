@@ -583,6 +583,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 					return Command.CONTINUE;
 				}
 			}
+			processDoneItems();
 			
 			
 			if(removedMsg.getReason()==OFFlowRemoved.OFFlowRemovedReason.OFPRR_HARD_TIMEOUT){
