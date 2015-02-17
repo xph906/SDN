@@ -870,17 +870,19 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 		ForwardFlowItem item = null;
 		int count = 0;
 		while((item=flowRemovedDoneTasks.poll()) != null){
-			int srcIP = item.getSrc_ip();
 			int dstIP = item.getDst_ip();
 			short srcPort = item.getNew_src_port()==0?item.getSrc_port():item.getNew_src_port();
 			short dstPort = item.getDst_port();
-			String key = ForwardFlowItem.generateForwardFlowTableKey(srcIP, srcPort, dstIP, dstPort);
+			String key = ForwardFlowItem.generateForwardFlowTableKey(dstIP, srcPort, item.getRemote_ip(), dstPort);
 			ForwardFlowItem storedItem = forwardFlowTable.get(key);
-			storedItem.setState(ForwardFLowItemState.FREE);
+			if(storedItem != null)
+				storedItem.setState(ForwardFLowItemState.FREE);
+			else
+				System.err.println("processDoneItems Error, can't find flow "+item);
 			count++;
 		}
 		if(count != 0){
-			System.err.println("Done free "+count+" items");
+			System.err.println("processDoneItems DEBUG Done free "+count+" items");
 		}
 	}
 	

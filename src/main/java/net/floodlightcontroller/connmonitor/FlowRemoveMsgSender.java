@@ -46,9 +46,9 @@ public class FlowRemoveMsgSender extends Thread {
 				httppost = new HttpPost(targetURL);
 				List<NameValuePair> params = new ArrayList<NameValuePair>(2);
 				short srcPort = item.getNew_src_port()==0?item.getSrc_port():item.getNew_src_port();
-				params.add(new BasicNameValuePair("srcIP", String.valueOf(item.getSrc_ip())));
+				params.add(new BasicNameValuePair("srcIP", String.valueOf(item.getDst_ip())));
 				params.add(new BasicNameValuePair("srcPort", String.valueOf(srcPort)));
-				params.add(new BasicNameValuePair("dstIP", String.valueOf(item.getDst_ip())));
+				params.add(new BasicNameValuePair("dstIP", String.valueOf(item.getRemote_ip())));
 				params.add(new BasicNameValuePair("dstPort", String.valueOf(item.getDst_port())));
 				httppost.setEntity(new UrlEncodedFormEntity(params, "UTF-8"));
 				System.err.println("FlowRemoveMsgSender DEBUG request has been prepared");
