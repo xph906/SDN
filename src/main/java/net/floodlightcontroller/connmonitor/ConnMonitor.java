@@ -84,7 +84,7 @@ import net.floodlightcontroller.routing.IRoutingDecision.RoutingAction;
 public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOFMessageListener, IOFSwitchListener, IConnMonitorService {
 	//FIXME: move these to configure file
 	static short HARD_TIMEOUT = 0;
-	static short IDLE_TIMEOUT = 300;
+	static short IDLE_TIMEOUT = 30;
 	static short HIH_HARD_TIMEOUT = 300;
 	static short HIH_IDLE_TIMEOUT = 60;
 	static short DELTA = 50;
@@ -904,9 +904,9 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 			if((conn.srcIP==thirdPartyHoneynet.getIp()) && (Honeynet.inSubnet(mask,conn.dstIP))){
 				//130.107.244.244:3357-129.105.44.107:80
 				String key = ForwardFlowItem.generateForwardFlowTableKey(conn.dstIP, conn.dstPort, conn.srcIP, conn.srcPort);
-				System.err.println("SENT FROM "+name+" src:"+IPv4.fromIPv4Address(conn.srcIP)+" dst:"+IPv4.fromIPv4Address(conn.dstIP) +
-									" flow srcport:"+positivePort(conn.srcPort) + 
-									" flow dstport:"+positivePort(conn.dstPort)+"\n    key:"+key);
+				//System.err.println("SENT FROM "+name+" src:"+IPv4.fromIPv4Address(conn.srcIP)+" dst:"+IPv4.fromIPv4Address(conn.dstIP) +
+				//					" flow srcport:"+positivePort(conn.srcPort) + 
+				//					" flow dstport:"+positivePort(conn.dstPort)+"\n    key:"+key);
 				
 				ForwardFlowItem item = forwardFlowTable.get(key);
 				if(item==null){
@@ -923,25 +923,25 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 					// FIXME: information is stored in ecn because dscn will be striped!!! 
 					byte ecn = ip_pkt.getDiffServ();
 					if(ecn == 0x01){
-						System.err.println("missing 0x04 setup packet "+((OFPacketIn)msg).getInPort());
+						//System.err.println("missing 0x04 setup packet "+((OFPacketIn)msg).getInPort());
 						boolean rs = forwardPacket2OtherNet(sw,(OFPacketIn)msg, nc_mac_address,remoteIPAddress,
 								IPv4.toIPv4AddressBytes(conn.getDstIP()),((OFPacketIn)msg).getInPort(), 
 								eth, (byte)0x01, front_src_ip, 
 								conn.dstPort, conn.srcPort); 
-						System.err.println("done resending 0x04 setup packet "+rs);
+						//System.err.println("done resending 0x04 setup packet "+rs);
 						return true;
 					}
 					else if(ecn == 0x02){
-						System.err.println("missing 0x08 setup packet "+((OFPacketIn)msg).getInPort());
+						//System.err.println("missing 0x08 setup packet "+((OFPacketIn)msg).getInPort());
 						boolean rs = forwardPacket2OtherNet(sw,(OFPacketIn)msg, nc_mac_address,remoteIPAddress,
 								IPv4.toIPv4AddressBytes(conn.getDstIP()),((OFPacketIn)msg).getInPort(),  
 								eth, (byte)0x02, end_src_ip, 
 								conn.dstPort, conn.srcPort); 
-						System.err.println("done resending 0x08 setup packet "+rs);
+						//System.err.println("done resending 0x08 setup packet "+rs);
 						return true;
 					}
 					else if(ecn == 0x03){
-						System.err.println("missing 0x0c setup packet "+((OFPacketIn)msg).getInPort());
+						//System.err.println("missing 0x0c setup packet "+((OFPacketIn)msg).getInPort());
 						boolean rs1 = forwardPacket2OtherNet(sw,(OFPacketIn)msg, nc_mac_address,remoteIPAddress,
 								IPv4.toIPv4AddressBytes(conn.getDstIP()),((OFPacketIn)msg).getInPort(), 
 								eth, (byte)0x01, front_src_ip, 
@@ -950,15 +950,15 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 								IPv4.toIPv4AddressBytes(conn.getDstIP()),((OFPacketIn)msg).getInPort(), 
 								eth, (byte)0x02, end_src_ip, 
 								conn.dstPort, conn.srcPort); 
-						System.err.println("done resending 0x04 setup packet "+rs1);
-						System.err.println("done resending 0x08 setup packet "+rs2);
+						//System.err.println("done resending 0x04 setup packet "+rs1);
+						//System.err.println("done resending 0x08 setup packet "+rs2);
 						return true;
 					}
 					else{
 						System.err.println("  dscn: "+ecn);
 					}
 				}
-				System.err.println("    original src:"+IPv4.fromIPv4Address(item.getSrc_ip()));
+				//System.err.println("    original src:"+IPv4.fromIPv4Address(item.getSrc_ip()));
 				/* thirdPartyHoneynet->attacker rule */
 				OFMatch match = new OFMatch();	
 				match.setDataLayerType((short)0x0800);
@@ -980,7 +980,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 				short new_dst_port = 0;
 				if(item.getSrc_port() !=item.getNew_src_port() )
 					new_dst_port = item.getSrc_port();
-				System.err.println("    new_dst_port:"+positivePort(new_dst_port));
+				//System.err.println("    new_dst_port:"+positivePort(new_dst_port));
 				boolean rs = installPathForFlow(switch_id,inport,match,OFFlowMod.OFPFF_SEND_FLOW_REM,
 												item.getFlow_cookie(), newDstMAC,newDstIP,newSrcIP,
 												(short)0, new_dst_port,outPort,IDLE_TIMEOUT,HARD_TIMEOUT,HIGH_PRIORITY);
@@ -1019,7 +1019,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 						processDoneItems();
 						ForwardFlowItem item = forwardFlowTable.get(key);
 						if((item==null) || (item.getState()==ForwardFlowItem.ForwardFLowItemState.FREE)){
-							System.err.println("        flow entry is ready for replacement");
+							//System.err.println("        flow entry is ready for replacement");
 							item = new ForwardFlowItem(conn.srcIP,conn.srcPort,conn.dstIP,conn.dstPort,new_src_port,(long)HARD_TIMEOUT,
 														conn.getProtocol(),thirdPartyHoneynet.getIp(),name);
 							cookie = forwardFlowTable.put(key, item);
@@ -1032,7 +1032,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 							continue;
 						}
 						else if(item.getState()==ForwardFlowItem.ForwardFLowItemState.USE){
-							System.err.println("        flow entry is in USE");
+							//System.err.println("        flow entry is in USE");
 							if((conn.srcIP == item.getSrc_ip()) && (conn.srcPort==item.getSrc_port())){
 								//System.err.println("            same flow, update StartingTime.");
 								if(forwardFlowTable.updateStartingtime(key,System.currentTimeMillis())==false){
@@ -1101,7 +1101,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 				outPort = inport;
 				if((new_src_port==conn.srcPort) || (new_src_port==0))
 					new_src_port = 0;
-				System.err.println("    install rule for forwording packets to NW. Match:"+match);
+				//System.err.println("    install rule for forwording packets to NW. Match:"+match);
 				boolean rs = installPathForFlow(switch_id,inport,match,OFFlowMod.OFPFF_SEND_FLOW_REM,
 								cookie, newDstMAC,newDstIP,newSrcIP,new_src_port, (short)0,outPort,IDLE_TIMEOUT,HARD_TIMEOUT,HIGH_PRIORITY);
 				if(rs==false){
