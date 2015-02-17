@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Vector;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -158,6 +159,8 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 	protected Hashtable<String, Connection> connToPot;
 	protected Hashtable<String, HashSet<Integer> > HIHClientMap;
 	protected ForwardFlowTable forwardFlowTable;
+	protected ConcurrentLinkedQueue<ForwardFlowItem> flowRemovedTasks;
+	protected ConcurrentLinkedQueue<ForwardFlowItem> flowRemovedDoneTasks;
 
 	protected IFloodlightProviderService floodlightProvider;
 	protected IRestApiService restApi;
@@ -174,9 +177,6 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 	private long packetCounter;
 	private long droppedCounter;
 	private long droppedHIHCounter;
-	
-	BlockingQueue<ForwardFlowItem> flowRemovedTasks;
-	BlockingQueue<ForwardFlowItem> flowRemovedDoneTasks;
 	
 	@Override
 	public String getName() {
@@ -577,7 +577,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 					}
 					item.setState(ForwardFLowItemState.WAIT_FOR_DEL_ACK);
 					deleteForwardRule(sw,item);
-					informRemoteToDestroyFlowInfo(item,name);
+					informRemoteToDestroyFlowInfo(item);
 					System.err.println("    done handling forward rules removed msg "+cookie);
 					return Command.CONTINUE;
 				}
@@ -851,12 +851,30 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 		}
 	}
 	
-	private void informRemoteToDestroyFlowInfo(ForwardFlowItem item, String name){
-		System.err.println("    Inform "+name+" to Destroy Flow Info");
+	private void informRemoteToDestroyFlowInfo(ForwardFlowItem item){
+		System.err.println("    Inform "+item.getName()+" to Destroy Flow Info");
+		flowRemovedTasks.add(item);
+		if(flowRemovedTasks.size() > CONN_MAX_SIZE/2){
+			System.err.println("    Alert!!! clear flowRemovedTasks");
+			flowRemovedTasks.clear();
+		}
 	}
 	private int positivePort(short port){
 		int rs = port & 0x0000ffff;
 		return rs;
+	}
+	/*untested method*/
+	private void processDoneItems(){
+		ForwardFlowItem item = null;
+		while((item=flowRemovedDoneTasks.poll()) != null){
+			int srcIP = item.getSrc_ip();
+			int dstIP = item.getDst_ip();
+			short srcPort = item.getNew_src_port()==0?item.getSrc_port():item.getNew_src_port();
+			short dstPort = item.getDst_port();
+			String key = ForwardFlowItem.generateForwardFlowTableKey(srcIP, srcPort, dstIP, dstPort);
+			ForwardFlowItem storedItem = forwardFlowTable.get(key);
+			storedItem.setState(ForwardFLowItemState.FREE);
+		}
 	}
 	
 	private boolean processedByOtherHoneynets(Connection conn, short inport,IOFSwitch sw, OFMessage msg,Ethernet eth ){
@@ -996,7 +1014,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 						if((item==null) || (item.getState()==ForwardFlowItem.ForwardFLowItemState.FREE)){
 							System.err.println("        flow entry is ready for replacement");
 							item = new ForwardFlowItem(conn.srcIP,conn.srcPort,conn.dstIP,conn.dstPort,new_src_port,(long)HARD_TIMEOUT,
-														conn.getProtocol(),thirdPartyHoneynet.getIp());
+														conn.getProtocol(),thirdPartyHoneynet.getIp(),name);
 							cookie = forwardFlowTable.put(key, item);
 							break;
 						}
@@ -1020,7 +1038,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 								forwardFlowTable.updateItemState(key, ForwardFlowItem.ForwardFLowItemState.WAIT_FOR_DEL_ACK);
 								System.err.println("            not same flow, but expired, del it asynchronously");
 								deleteForwardRule(sw,item);
-								informRemoteToDestroyFlowInfo(item,name);
+								informRemoteToDestroyFlowInfo(item);
 								new_src_port = ForwardFlowItem.generateRandomPortNumber();
 								continue;
 							}	
@@ -1040,7 +1058,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 					//key = ForwardFlowItem.generateForwardFlowTableKey(conn.dstIP, new_src_port, nw.getIp(), conn.dstPort);
 					
 					ForwardFlowItem item = new ForwardFlowItem(conn.srcIP,conn.srcPort,conn.dstIP,conn.dstPort,new_src_port,(long)HARD_TIMEOUT,
-									conn.getProtocol(),thirdPartyHoneynet.getIp());
+									conn.getProtocol(),thirdPartyHoneynet.getIp(),name);
 					cookie = forwardFlowTable.put(key, item);	
 				}
 				System.err.println("    send setup packets out "+conn+
@@ -1998,6 +2016,8 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 	    HIHNameMap = new Hashtable<Long, String>();
 	    HIHFlowCount = new Hashtable<String, Integer>();
 	    forwardFlowTable = new ForwardFlowTable();
+	    flowRemovedTasks = new ConcurrentLinkedQueue<ForwardFlowItem>();
+	    flowRemovedDoneTasks = new ConcurrentLinkedQueue<ForwardFlowItem>();
 	    executor = Executors.newFixedThreadPool(1);
 	    logger = new MyLogger(); 
 		
@@ -2013,9 +2033,6 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 	    /* Init other honeynet */
 	    Honeynet.putHoneynet("nw", IPv4.toIPv4Address("129.105.44.107"), IPv4.toIPv4Address("130.107.240.0"), 20);
 	    Honeynet.putHoneynet("ec2", IPv4.toIPv4Address("54.213.197.234"), IPv4.toIPv4Address("130.107.224.0"), 20);
-	    
-	    flowRemovedTasks = new LinkedBlockingQueue<ForwardFlowItem>();
-		flowRemovedDoneTasks = new LinkedBlockingQueue<ForwardFlowItem>();
 	    
 	    lastClearConnMapTime = System.currentTimeMillis();
 	    lastClearConnToPotTime = System.currentTimeMillis();

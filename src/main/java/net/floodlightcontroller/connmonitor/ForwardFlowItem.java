@@ -14,7 +14,7 @@ public class ForwardFlowItem {
 	private long flow_cookie;
 	private byte protocol;
 	private int remote_ip;
-	
+	private String name;
 	private ForwardFLowItemState state;
 	
 	static public String generateForwardFlowTableKey(int src_ip, short src_port, int dst_ip, short dst_port){
@@ -38,7 +38,7 @@ public class ForwardFlowItem {
 	}
 	
 	/* new_src_port == 0 => src_port not getting changed */
-	public ForwardFlowItem(int src_ip, short src_port, int dst_ip, short dst_port, short new_src_port, long timeout, byte protocol,int remote_ip){
+	public ForwardFlowItem(int src_ip, short src_port, int dst_ip, short dst_port, short new_src_port, long timeout, byte protocol,int remote_ip, String name){
 		this.src_ip = src_ip;
 		this.src_port = src_port;
 		this.dst_ip = dst_ip;
@@ -54,6 +54,7 @@ public class ForwardFlowItem {
 		this.flow_cookie = 0;
 		this.protocol = protocol;
 		this.setRemote_ip(remote_ip);
+		this.name = name;
 	}
 	
 	public boolean expire(){
@@ -132,6 +133,12 @@ public class ForwardFlowItem {
 	}
 	public void setRemote_ip(int remote_ip) {
 		this.remote_ip = remote_ip;
+	}
+	public String getName() {
+		return name;
+	}
+	public void setName(String name) {
+		this.name = name;
 	}
 	
 }
