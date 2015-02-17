@@ -166,6 +166,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 	protected IRestApiService restApi;
 	
 	private ExecutorService executor;
+	private FlowRemoveMsgSender msgSender;
 	
 	protected MyLogger logger;
 	static Date currentTime = new Date();
@@ -866,6 +867,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 	/*untested method*/
 	private void processDoneItems(){
 		ForwardFlowItem item = null;
+		int count = 0;
 		while((item=flowRemovedDoneTasks.poll()) != null){
 			int srcIP = item.getSrc_ip();
 			int dstIP = item.getDst_ip();
@@ -874,6 +876,10 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 			String key = ForwardFlowItem.generateForwardFlowTableKey(srcIP, srcPort, dstIP, dstPort);
 			ForwardFlowItem storedItem = forwardFlowTable.get(key);
 			storedItem.setState(ForwardFLowItemState.FREE);
+			count++;
+		}
+		if(count != 0){
+			System.err.println("Done free "+count+" items");
 		}
 	}
 	
@@ -1010,6 +1016,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 						}
 						count++;
 						key = ForwardFlowItem.generateForwardFlowTableKey(conn.dstIP, new_src_port, thirdPartyHoneynet.getIp(), conn.dstPort);
+						processDoneItems();
 						ForwardFlowItem item = forwardFlowTable.get(key);
 						if((item==null) || (item.getState()==ForwardFlowItem.ForwardFLowItemState.FREE)){
 							System.err.println("        flow entry is ready for replacement");
