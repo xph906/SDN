@@ -1000,14 +1000,14 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 				
 				//130.107.244.244:3357-129.105.44.107:80
 				String key = ForwardFlowItem.generateForwardFlowTableKey(conn.dstIP, conn.srcPort, thirdPartyHoneynet.getIp(), conn.dstPort);
-				System.err.println("SENT TO "+name+" src:"+IPv4.fromIPv4Address(conn.srcIP)+" dst:"+IPv4.fromIPv4Address(conn.dstIP) +
-						" flow srcport:"+positivePort(conn.srcPort) + 
-						" flow dstport:"+positivePort(conn.dstPort)+"\n    key:"+key);
+				//System.err.println("SENT TO "+name+" src:"+IPv4.fromIPv4Address(conn.srcIP)+" dst:"+IPv4.fromIPv4Address(conn.dstIP) +
+				//		" flow srcport:"+positivePort(conn.srcPort) + 
+				//		" flow dstport:"+positivePort(conn.dstPort)+"\n    key:"+key);
 				short new_src_port = conn.srcPort;
 				long cookie = 0;
 				if(forwardFlowTable.containsKey(key)) /* table item exists*/
 				{	
-					System.err.println("    entry exists for this flow:"+key);
+					//System.err.println("    entry exists for this flow:"+key);
 					int count = 0;
 					while(true){
 						if(count > 5){
@@ -1027,14 +1027,14 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 						}
 						else if(item.getState()==ForwardFlowItem.ForwardFLowItemState.WAIT_FOR_DEL_ACK){
 							//the other thread can only delete this item
-							System.err.println("        flow entry is not ready for replacement: WAIT_FOR_DEL_ACK");
+							//System.err.println("        flow entry is not ready for replacement: WAIT_FOR_DEL_ACK");
 							new_src_port = ForwardFlowItem.generateRandomPortNumber();
 							continue;
 						}
 						else if(item.getState()==ForwardFlowItem.ForwardFLowItemState.USE){
 							System.err.println("        flow entry is in USE");
 							if((conn.srcIP == item.getSrc_ip()) && (conn.srcPort==item.getSrc_port())){
-								System.err.println("            same flow, update StartingTime.");
+								//System.err.println("            same flow, update StartingTime.");
 								if(forwardFlowTable.updateStartingtime(key,System.currentTimeMillis())==false){
 									System.err.println("            error updateStartingTime. This one is deleted by other thread");
 								}
@@ -1043,14 +1043,14 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 							}
 							else if(item.expire()){
 								forwardFlowTable.updateItemState(key, ForwardFlowItem.ForwardFLowItemState.WAIT_FOR_DEL_ACK);
-								System.err.println("            not same flow, but expired, del it asynchronously");
+								//System.err.println("            not same flow, but expired, del it asynchronously");
 								deleteForwardRule(sw,item);
 								informRemoteToDestroyFlowInfo(item);
 								new_src_port = ForwardFlowItem.generateRandomPortNumber();
 								continue;
 							}	
 							else{
-								System.err.println("            not same flow, switch port");
+								//System.err.println("            not same flow, switch port");
 								new_src_port = ForwardFlowItem.generateRandomPortNumber();
 								continue;
 							}
@@ -1059,7 +1059,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 				}
 				else /*new item*/
 				{	/*src_ip, short src_port, int dst_ip, short dst_port, short new_src_port,  timeout*/
-					System.err.println("    no entry exists");
+					//System.err.println("    no entry exists");
 					/* For test */		
 					//new_src_port = (short)(conn.srcPort+(short)100);
 					//key = ForwardFlowItem.generateForwardFlowTableKey(conn.dstIP, new_src_port, nw.getIp(), conn.dstPort);
@@ -1068,8 +1068,8 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 									conn.getProtocol(),thirdPartyHoneynet.getIp(),name);
 					cookie = forwardFlowTable.put(key, item);	
 				}
-				System.err.println("    send setup packets out "+conn+
-								"\n        flow srcPort:"+positivePort(conn.srcPort)+" new srcPort:"+positivePort(new_src_port));
+				//System.err.println("    send setup packets out "+conn+
+				//				"\n        flow srcPort:"+positivePort(conn.srcPort)+" new srcPort:"+positivePort(new_src_port));
 				int src_ip = conn.srcIP;
 				short front_src_ip = (short)( (src_ip>>>16) & 0x0000ffff);
 				short end_src_ip = (short)(src_ip & 0x0000ffff);
@@ -1435,8 +1435,8 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
         
         pktOut.setInPort(pktInMsg.getInPort());
         pktOut.setBufferId(pktInMsg.getBufferId());
-        System.err.println("forward new src: "+IPv4.fromIPv4Address(IPv4.toIPv4Address(srcIP)));
-     	System.err.println("forward new dst: "+IPv4.fromIPv4Address(IPv4.toIPv4Address(dstIP)));
+        //System.err.println("forward new src: "+IPv4.fromIPv4Address(IPv4.toIPv4Address(srcIP)));
+     	//System.err.println("forward new dst: "+IPv4.fromIPv4Address(IPv4.toIPv4Address(dstIP)));
      	
      	List<OFAction> actions = new ArrayList<OFAction>();
      	
@@ -1560,7 +1560,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
             else{
             	short eth_type = eth.getEtherType();
             	String eth_type_str = Integer.toHexString(eth_type & 0xffff);
-            	System.err.println("msglen:"+msg_len+" packetlen:"+packet_len+" iplen: no ipv4 pkt :"+eth_type_str);
+            	//System.err.println("msglen:"+msg_len+" packetlen:"+packet_len+" iplen: no ipv4 pkt :"+eth_type_str);
             	pktOut.setPacketData(packetData);
             }
            
@@ -1574,7 +1574,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
         
         try 
         {
-        	System.err.println("wrote pktOut");
+        	//System.err.println("wrote pktOut");
             sw.write(pktOut, null);
             sw.flush();
             //logger.info("forwarded packet ");
@@ -1735,7 +1735,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
             else{
             	short eth_type = eth.getEtherType();
             	String eth_type_str = Integer.toHexString(eth_type & 0xffff);
-            	System.err.println("msglen:"+msg_len+" packetlen:"+packet_len+" iplen: no ipv4 pkt :"+eth_type_str);
+            	//System.err.println("msglen:"+msg_len+" packetlen:"+packet_len+" iplen: no ipv4 pkt :"+eth_type_str);
             	pktOut.setPacketData(packetData);
             }
            
