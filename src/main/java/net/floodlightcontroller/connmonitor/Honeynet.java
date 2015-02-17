@@ -12,9 +12,9 @@ public class Honeynet {
 		return null;
 	}
 	/* create one if it doesn't exist */
-	static public boolean putHoneynet(String name, int ip, int mask, int mask_width){
+	static public boolean putHoneynet(String name, int ip, int mask, int mask_width, FlowRemoveMsgSender sender){
 		if(honeynets.get(name)==null){
-			Honeynet h = new Honeynet(name,ip,mask,mask_width);
+			Honeynet h = new Honeynet(name,ip,mask,mask_width,sender);
 			int id = honeynets.size()+1;
 			h.setId(id);
 			honeynets.put(name, h);
@@ -61,13 +61,15 @@ public class Honeynet {
 	}
 	
 	private String name;
+	private FlowRemoveMsgSender sender;
 	private int id;
 	private int ip;
 	private SubnetMask mask; /*SRI IP range*/
-	private Honeynet(String n, int addr, int m, int mask_len){
+	private Honeynet(String n, int addr, int m, int mask_len, FlowRemoveMsgSender sender){
 		name = n;
 		ip = addr;
 		mask = new SubnetMask(m,mask_len);
+		this.setSender(sender);
 	}
 	public String getName() {
 		return name;
@@ -86,6 +88,12 @@ public class Honeynet {
 	}
 	public void setIp(int ip) {
 		this.ip = ip;
+	}
+	public FlowRemoveMsgSender getSender() {
+		return sender;
+	}
+	public void setSender(FlowRemoveMsgSender sender) {
+		this.sender = sender;
 	}
 	
 }

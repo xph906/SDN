@@ -34,6 +34,8 @@ public class FlowRemoveMsgSender extends Thread {
 	
 	public void run() {
 		HttpPost httppost = null;
+		System.err.println("FlowRemoveSender DEBUG FlowRemoveMsgSender has been started: "+targetURL);
+		System.err.println("FlowRemoveSender DEBUG undone tasks: "+undoneTask.size());
 		while(true){
 			try{
 				ForwardFlowItem item = undoneTask.poll();

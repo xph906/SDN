@@ -166,7 +166,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 	protected IRestApiService restApi;
 	
 	private ExecutorService executor;
-	private FlowRemoveMsgSender msgSender;
+	private FlowRemoveMsgSender nwMsgSender;
 	
 	protected MyLogger logger;
 	static Date currentTime = new Date();
@@ -2026,6 +2026,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 	    flowRemovedTasks = new ConcurrentLinkedQueue<ForwardFlowItem>();
 	    flowRemovedDoneTasks = new ConcurrentLinkedQueue<ForwardFlowItem>();
 	    executor = Executors.newFixedThreadPool(1);
+	    nwMsgSender = new FlowRemoveMsgSender(flowRemovedTasks,flowRemovedDoneTasks,"http://129.105.44.107:8899/wm/connmonitor/inform/json");
 	    logger = new MyLogger(); 
 		
 	    /* Init Switches */
@@ -2038,8 +2039,11 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 	    //initPorts();
 	    
 	    /* Init other honeynet */
-	    Honeynet.putHoneynet("nw", IPv4.toIPv4Address("129.105.44.107"), IPv4.toIPv4Address("130.107.240.0"), 20);
-	    Honeynet.putHoneynet("ec2", IPv4.toIPv4Address("54.213.197.234"), IPv4.toIPv4Address("130.107.224.0"), 20);
+	    Honeynet.putHoneynet("nw", IPv4.toIPv4Address("129.105.44.107"), IPv4.toIPv4Address("130.107.240.0"), 20, nwMsgSender);
+	    Honeynet.putHoneynet("ec2", IPv4.toIPv4Address("54.213.197.234"), IPv4.toIPv4Address("130.107.224.0"), 20, null);
+	    
+	    /* Start nwMsgSender */
+	    nwMsgSender.start();
 	    
 	    lastClearConnMapTime = System.currentTimeMillis();
 	    lastClearConnToPotTime = System.currentTimeMillis();
