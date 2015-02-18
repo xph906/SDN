@@ -45,6 +45,9 @@ public class FlowRemoveMsgSender extends Thread {
 					 Thread.sleep(5000);
 					 continue;
 				}
+				if(item.getName()!="nw"){
+					continue;
+				}
 				httppost = new HttpPost(targetURL);
 				//List<NameValuePair> params = new ArrayList<NameValuePair>(2);
 				short srcPort = item.getNew_src_port()==0?item.getSrc_port():item.getNew_src_port();

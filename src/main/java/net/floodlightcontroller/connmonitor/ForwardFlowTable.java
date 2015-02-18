@@ -51,7 +51,7 @@ public class ForwardFlowTable {
 	
 	public synchronized long put(String key, ForwardFlowItem item){
 		
-		if(table.size() > 20){
+		if(table.size() > MAX_SIZE){
 			System.err.println("change this part ForwardFlowTable:"+table.size());
 			for(Iterator<Entry<String, ForwardFlowItem>> it=table.entrySet().iterator(); 
 						it.hasNext(); ){

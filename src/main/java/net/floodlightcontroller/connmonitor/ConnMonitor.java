@@ -84,7 +84,7 @@ import net.floodlightcontroller.routing.IRoutingDecision.RoutingAction;
 public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOFMessageListener, IOFSwitchListener, IConnMonitorService {
 	//FIXME: move these to configure file
 	static short HARD_TIMEOUT = 0;
-	static short IDLE_TIMEOUT = 30;
+	static short IDLE_TIMEOUT = 300;
 	static short HIH_HARD_TIMEOUT = 300;
 	static short HIH_IDLE_TIMEOUT = 60;
 	static short DELTA = 50;
