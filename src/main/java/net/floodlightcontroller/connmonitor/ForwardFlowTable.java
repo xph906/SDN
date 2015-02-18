@@ -1,6 +1,8 @@
 package net.floodlightcontroller.connmonitor;
 
 import java.util.Hashtable;
+import java.util.Iterator;
+import java.util.Map.Entry;
 
 import net.floodlightcontroller.connmonitor.ForwardFlowItem.ForwardFLowItemState;
 
@@ -50,18 +52,19 @@ public class ForwardFlowTable {
 	public synchronized long put(String key, ForwardFlowItem item){
 		
 		if(table.size() > 20){
-			System.err.println("change this part ForwardFlowTable:51");
-			for(String k : table.keySet()){
-				
-				ForwardFlowItem value = table.get(k);
-				if(value.getState()==ForwardFLowItemState.FREE){
-					System.err.println(" debug: "+k);
-					table.remove(k);
+			System.err.println("change this part ForwardFlowTable:"+table.size());
+			for(Iterator<Entry<String, ForwardFlowItem>> it=table.entrySet().iterator(); 
+						it.hasNext(); ){
+				Entry<String, ForwardFlowItem> entry = it.next();
+				if(entry.getValue().getState()==ForwardFLowItemState.FREE){
+					//System.err.println(" debug: "+k);
+					it.remove();
 				}
 			}
 			System.err.println("light clear ForwardFlowTable size:"+table.size());
 			if(table.size() > MAX_SIZE/2){
 				clear();
+				System.err.println("Clear table:"+table.size());
 			}
 		}
 		long cookie = getNextCookie();
