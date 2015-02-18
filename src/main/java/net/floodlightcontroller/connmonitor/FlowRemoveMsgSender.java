@@ -15,6 +15,7 @@ import org.apache.http.NameValuePair;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.message.BasicNameValuePair;
 
@@ -34,6 +35,7 @@ public class FlowRemoveMsgSender extends Thread {
 	
 	public void run() {
 		HttpPost httppost = null;
+		StringBuilder sb = null;
 		System.err.println("FlowRemoveSender DEBUG FlowRemoveMsgSender has been started: "+targetURL);
 		System.err.println("FlowRemoveSender DEBUG undone tasks: "+undoneTask.size());
 		while(true){
@@ -44,14 +46,19 @@ public class FlowRemoveMsgSender extends Thread {
 					 continue;
 				}
 				httppost = new HttpPost(targetURL);
-				List<NameValuePair> params = new ArrayList<NameValuePair>(2);
+				//List<NameValuePair> params = new ArrayList<NameValuePair>(2);
 				short srcPort = item.getNew_src_port()==0?item.getSrc_port():item.getNew_src_port();
-				params.add(new BasicNameValuePair("srcIP", String.valueOf(item.getDst_ip())));
-				params.add(new BasicNameValuePair("srcPort", String.valueOf(srcPort)));
-				params.add(new BasicNameValuePair("dstIP", String.valueOf(item.getRemote_ip())));
-				params.add(new BasicNameValuePair("dstPort", String.valueOf(item.getDst_port())));
-				httppost.setEntity(new UrlEncodedFormEntity(params, "UTF-8"));
-				System.err.println("FlowRemoveMsgSender DEBUG request has been prepared");
+				sb = new StringBuilder();
+				sb.append("values={\"name\":\"");
+				sb.append(item.getName());
+				sb.append("\",\"status\":\"flowremoved\",\"srcIP\":\"");
+				sb.append(String.valueOf(item.getDst_ip())+   "\",\"srcPort\":\"");
+				sb.append(String.valueOf(srcPort)+            "\",\"dstIP\":\"");
+				sb.append(String.valueOf(item.getRemote_ip())+"\",\"dstPort\":\"");
+				sb.append(String.valueOf(item.getDst_port())+ "\"}");	
+				StringEntity params =new StringEntity(sb.toString());
+				httppost.setEntity(params);
+				System.err.println("FlowRemoveMsgSender DEBUG request has been prepared: "+sb.toString());
 				
 				HttpResponse response = httpclient.execute(httppost);
 				HttpEntity entity = response.getEntity();

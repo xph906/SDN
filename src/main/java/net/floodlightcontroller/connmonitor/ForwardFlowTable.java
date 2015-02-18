@@ -48,8 +48,11 @@ public class ForwardFlowTable {
 	}
 	
 	public synchronized long put(String key, ForwardFlowItem item){
-		if(table.size() > MAX_SIZE){
+		
+		if(table.size() > 20){
+			System.err.println("change this part ForwardFlowTable:51");
 			for(String k : table.keySet()){
+				System.err.println(" debug: "+k);
 				ForwardFlowItem value = table.get(k);
 				if(value.getState()==ForwardFLowItemState.FREE){
 					table.remove(k);
