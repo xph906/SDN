@@ -49,7 +49,7 @@ public class FlowRemoveMsgSender extends Thread {
 				//List<NameValuePair> params = new ArrayList<NameValuePair>(2);
 				short srcPort = item.getNew_src_port()==0?item.getSrc_port():item.getNew_src_port();
 				sb = new StringBuilder();
-				sb.append("values={\"name\":\"");
+				sb.append("{\"name\":\"");
 				sb.append(item.getName());
 				sb.append("\",\"status\":\"flowremoved\",\"srcIP\":\"");
 				sb.append(String.valueOf(item.getDst_ip())+   "\",\"srcPort\":\"");
