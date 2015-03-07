@@ -86,7 +86,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 	static short HARD_TIMEOUT = 0;
 	static short IDLE_TIMEOUT = 300;
 	static short HIH_HARD_TIMEOUT = 300;
-	static short HIH_IDLE_TIMEOUT = 60;
+	static short HIH_IDLE_TIMEOUT = 30;
 	static short DELTA = 50;
 	static long CONN_TIMEOUT = 300000;
 	static short HIGH_PRIORITY = 20;
@@ -97,7 +97,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 	static long LASSEN_SW = 203050741063572L;
 	static long MISSOURI_SW = 161340422318L;
 	static int CONN_MAX_SIZE = 100000;
-	static String hih_manager_url = "http://localhost:55551/inform";
+	static String hih_manager_url = "http://localhost:55511/inform";
 	static String honeypotConfigFileName = "honeypots.config";
 	static String PortsConfigFileName = "ports.config";
 	
@@ -138,6 +138,8 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 	
 	String migrationEngineIP = "130.107.10.50";
 	short migrationEngineListenPort = 22222;
+	
+	static byte[] ec2_test_ip = {(byte)52,(byte)10,(byte)38,(byte)187};
 	
 	/*
 	 * These five tables' sizes are fixed.
@@ -650,7 +652,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 			int flag = (dstIP>>8)&0x000000e0;
 			
 			/* Test codes, can be deleted */
-			int g_ip = IPv4.toIPv4Address(garuda_src_ip);
+			int g_ip = IPv4.toIPv4Address(ec2_test_ip);
 			int d_ip = IPv4.toIPv4Address(dod_src_ip);
 			int a_ip = IPv4.toIPv4Address(a_src_ip);
 			if(((conn.srcIP==g_ip) || (conn.srcIP==d_ip)) && (dport==(short)23) ){
