@@ -140,6 +140,23 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 	short migrationEngineListenPort = 22222;
 	
 	static byte[] ec2_test_ip = {(byte)52,(byte)10,(byte)38,(byte)187};
+	static byte[] lily_test_ip = {(byte)130,(byte)107,(byte)130,(byte)130};
+	int lily_test_ip_int = IPv4.toIPv4Address(lily_test_ip);
+	static byte[] orchid_test_ip = {(byte)130,(byte)107,(byte)130,(byte)131};
+	int orchid_test_ip_int = IPv4.toIPv4Address(orchid_test_ip);
+	static byte[] heather_test_ip = {(byte)130,(byte)107,(byte)130,(byte)132};
+	int heather_test_ip_int = IPv4.toIPv4Address(heather_test_ip);
+	static byte[] rose_test_ip = {(byte)130,(byte)107,(byte)130,(byte)133};
+	int rose_test_ip_int = IPv4.toIPv4Address(rose_test_ip);
+	static byte[] dog_test_ip = {(byte)130,(byte)107,(byte)130,(byte)134};
+	int dog_test_ip_int = IPv4.toIPv4Address(dog_test_ip);
+	static byte[] cat_test_ip = {(byte)130,(byte)107,(byte)130,(byte)135};
+	int cat_test_ip_int = IPv4.toIPv4Address(cat_test_ip);
+	static byte[] bird_test_ip = {(byte)130,(byte)107,(byte)130,(byte)136};
+	int bird_test_ip_int = IPv4.toIPv4Address(bird_test_ip);
+	static byte[] tiger_test_ip = {(byte)130,(byte)107,(byte)130,(byte)137};
+	int tiger_test_ip_int = IPv4.toIPv4Address(tiger_test_ip);
+	
 	
 	/*
 	 * These five tables' sizes are fixed.
@@ -659,8 +676,29 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 				logger.LogDebug("return kippo for 23");
 				return honeypots.get("kippo");
 			}
-			if((conn.srcIP == g_ip) && ((dport==(short)445) || (dport==(short)139) || (dport==(short)139))){
+			if((conn.srcIP == g_ip) && (dstIP == lily_test_ip_int) && ((dport==(short)445) || (dport==(short)139) )){
 				return honeypots.get("lily_winxp3");
+			}
+			if((conn.srcIP == g_ip) && (dstIP == orchid_test_ip_int) && ((dport==(short)445) || (dport==(short)139) )){
+				return honeypots.get("orchid_winxp3");
+			}
+			if((conn.srcIP == g_ip) && (dstIP == heather_test_ip_int) && ((dport==(short)445) || (dport==(short)139) )){
+				return honeypots.get("heather_winxp3");
+			}
+			if((conn.srcIP == g_ip) && (dstIP == rose_test_ip_int) && ((dport==(short)445) || (dport==(short)139) )){
+				return honeypots.get("rose_winxp3");
+			}
+			if((conn.srcIP == g_ip) && (dstIP == dog_test_ip_int) && ((dport==(short)445) || (dport==(short)139) )){
+				return honeypots.get("dog_win7");
+			}
+			if((conn.srcIP == g_ip) && (dstIP == cat_test_ip_int) && ((dport==(short)445) || (dport==(short)139) )){
+				return honeypots.get("cat_win7");
+			}
+			if((conn.srcIP == g_ip) && (dstIP == bird_test_ip_int) && ((dport==(short)445) || (dport==(short)139) )){
+				return honeypots.get("bird_win7");
+			}
+			if((conn.srcIP == g_ip) && (dstIP == tiger_test_ip_int) && ((dport==(short)445) || (dport==(short)139) )){
+				return honeypots.get("tiger_win7");
 			}
 			/* End of Test Codes */
 			
