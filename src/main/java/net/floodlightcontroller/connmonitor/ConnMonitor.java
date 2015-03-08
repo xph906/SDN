@@ -156,7 +156,8 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 	int bird_test_ip_int = IPv4.toIPv4Address(bird_test_ip);
 	static byte[] tiger_test_ip = {(byte)130,(byte)107,(byte)130,(byte)137};
 	int tiger_test_ip_int = IPv4.toIPv4Address(tiger_test_ip);
-	
+	static byte[] migration_test_ip = {(byte)130,(byte)107,(byte)130,(byte)138};
+	int migration_test_ip_int = IPv4.toIPv4Address(migration_test_ip);
 	
 	/*
 	 * These five tables' sizes are fixed.
@@ -699,6 +700,9 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 			}
 			if((conn.srcIP == g_ip) && (dstIP == tiger_test_ip_int) && ((dport==(short)445) || (dport==(short)139) )){
 				return honeypots.get("tiger_win7");
+			}
+			if((conn.srcIP == g_ip) && (dstIP == migration_test_ip_int) && (dport==(short)23) ){
+				return honeypots.get("kippo");
 			}
 			/* End of Test Codes */
 			
