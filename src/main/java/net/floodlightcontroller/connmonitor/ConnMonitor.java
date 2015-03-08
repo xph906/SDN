@@ -121,7 +121,8 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 	 */
 	//static byte[] heather_download_address = {(byte)130, (byte)107, (byte)128, (byte)143}; //FIXME
 	static byte[] migration_ip_address = {(byte)10,(byte)1,(byte)1, (byte)10};
-	static byte[] migration_mac_address = {(byte)0x62, (byte)0x04, (byte)0xc6, (byte)0x49, (byte)0xb0, (byte)0x2e};
+	//e2:a7:70:a5:b7:fb
+	static byte[] migration_mac_address = {(byte)0xe2, (byte)0xa7, (byte)0x70, (byte)0xa5, (byte)0xb7, (byte)0xfb};
 	static short migration_out_port = 6;
 	static byte migration_type = HoneyPot.HIGH_INTERACTION;
 	
