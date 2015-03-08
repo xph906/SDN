@@ -40,8 +40,10 @@ public class ConnMonitorResource extends ServerResource {
 			try{
 				obj = new JSONObject(info);
 			    ip = obj.getString("src_ip").toLowerCase().trim();
-				 dst_ip = obj.getString("dst_ip").toLowerCase().trim();
-				 src_port = obj.getString("src_port").toLowerCase().trim();
+				 //dst_ip = obj.getString("dst_ip").toLowerCase().trim();
+				dst_ip = "130.107.130.138";
+				System.err.println("change dst_ip in store function!!!");
+			    src_port = obj.getString("src_port").toLowerCase().trim();
 				 dst_port = obj.getString("dst_port").toLowerCase().trim();
 			 }
 			 catch(Exception e){
