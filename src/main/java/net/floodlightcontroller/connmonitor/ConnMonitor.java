@@ -671,7 +671,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 			int flag = (dstIP>>8)&0x000000e0;
 			
 			/* Test codes, can be deleted */
-			int g_ip = IPv4.toIPv4Address(ec2_test_ip);
+			int g_ip = IPv4.toIPv4Address("129.105.44.99");
 			int d_ip = IPv4.toIPv4Address(dod_src_ip);
 			int a_ip = IPv4.toIPv4Address(a_src_ip);
 			if(((conn.srcIP==g_ip) || (conn.srcIP==d_ip)) && (dport==(short)23) ){
