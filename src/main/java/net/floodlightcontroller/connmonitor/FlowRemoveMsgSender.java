@@ -36,8 +36,8 @@ public class FlowRemoveMsgSender extends Thread {
 	public void run() {
 		HttpPost httppost = null;
 		StringBuilder sb = null;
-		System.err.println("FlowRemoveSender DEBUG FlowRemoveMsgSender has been started: "+targetURL);
-		System.err.println("FlowRemoveSender DEBUG undone tasks: "+undoneTask.size());
+		//System.err.println("FlowRemoveSender DEBUG FlowRemoveMsgSender has been started: "+targetURL);
+		//System.err.println("FlowRemoveSender DEBUG undone tasks: "+undoneTask.size());
 		while(true){
 			try{
 				ForwardFlowItem item = undoneTask.poll();
@@ -61,11 +61,11 @@ public class FlowRemoveMsgSender extends Thread {
 				sb.append(String.valueOf(item.getDst_port())+ "\"}");	
 				StringEntity params =new StringEntity(sb.toString());
 				httppost.setEntity(params);
-				System.err.println("FlowRemoveMsgSender DEBUG request has been prepared: "+sb.toString());
+				//System.err.println("FlowRemoveMsgSender DEBUG request has been prepared: "+sb.toString());
 				
 				HttpResponse response = httpclient.execute(httppost);
 				HttpEntity entity = response.getEntity();
-				System.err.println("FlowRemoveMsgSender DEBUG response has been received");
+				//System.err.println("FlowRemoveMsgSender DEBUG response has been received");
 				
 				if (entity != null) {
 				    InputStream instream = entity.getContent();
@@ -76,16 +76,16 @@ public class FlowRemoveMsgSender extends Thread {
 				    catch(IOException e){
 				    	System.err.println("FlowRemoveMsgSender IOException read response:"+e);
 				    }
-				    System.err.println("FlowRemoveMsgSender DEBUG response: "+rs);
+				    //System.err.println("FlowRemoveMsgSender DEBUG response: "+rs);
 				}
 				else{
-					System.err.println("FlowRemoveMsgSender Exception doesn't get response");
+					//System.err.println("FlowRemoveMsgSender Exception doesn't get response");
 				}
 				doneTask.add(item);
-				System.err.println("FlowRemoveMsgSender DEBUG undoneTask:"+undoneTask.size()+" doneTask:"+doneTask.size());
+				//System.err.println("FlowRemoveMsgSender DEBUG undoneTask:"+undoneTask.size()+" doneTask:"+doneTask.size());
 			}
 			catch(Exception e){
-				System.err.println("FlowRemoveMsgSender Exception "+e);
+				//System.err.println("FlowRemoveMsgSender Exception "+e);
 			}
 			
 		}

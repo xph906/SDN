@@ -582,10 +582,10 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 			for(Honeynet net : Honeynet.getAllHoneynets()){	
 				String name = net.getName();
 				Honeynet.SubnetMask mask = net.getMask();
-				System.err.println("remove flows: test for honeynet "+name+" mask:"+mask+" src_ip:"+IPv4.fromIPv4Address(srcIP)+" dst_ip:"+IPv4.fromIPv4Address(dstIP));
+				//System.err.println("remove flows: test for honeynet "+name+" mask:"+mask+" src_ip:"+IPv4.fromIPv4Address(srcIP)+" dst_ip:"+IPv4.fromIPv4Address(dstIP));
 				if(Honeynet.inSubnet(mask, dstIP) || Honeynet.inSubnet(mask, srcIP) ){
 					long cookie = removedMsg.getCookie();
-					System.err.println("    remove flows: flow belonging to "+name+" with cookie:"+cookie);
+					//System.err.println("    remove flows: flow belonging to "+name+" with cookie:"+cookie);
 					String key = forwardFlowTable.fromCookieToKey(cookie);
 					if(key == null){
 						System.err.println("    the item has already been removed from forwardFlowTable");
@@ -600,7 +600,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 					item.setState(ForwardFLowItemState.WAIT_FOR_DEL_ACK);
 					deleteForwardRule(sw,item);
 					informRemoteToDestroyFlowInfo(item);
-					System.err.println("    done handling forward rules removed msg "+cookie);
+					//System.err.println("    done handling forward rules removed msg "+cookie);
 					return Command.CONTINUE;
 				}
 			}
@@ -622,11 +622,11 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 					int count = HIHFlowCount.get(honeypotName) - 1;
 					
 					if(count > 0){
-						logger.LogDebug("flow for vm: "+honeypotName+" gets removed. "+count+" has left");
+						//logger.LogDebug("flow for vm: "+honeypotName+" gets removed. "+count+" has left");
 						HIHFlowCount.put(honeypotName, count);
 					}
 					else if(count <= 0){
-						logger.LogDebug("flow for vm: "+honeypotName+" gets removed. leave vm");
+						//logger.LogDebug("flow for vm: "+honeypotName+" gets removed. leave vm");
 						HIHFlowCount.put(honeypotName, 0);
 						String url = buildMessageForHIHManager(honeypotName, "leavevm", null);
 						try {
