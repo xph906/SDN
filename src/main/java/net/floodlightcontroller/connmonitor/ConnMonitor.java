@@ -140,6 +140,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 	short migrationEngineListenPort = 22222;
 	
 	static byte[] ec2_test_ip = {(byte)52,(byte)10,(byte)38,(byte)187};
+	String ec2_test_ip_str = IPv4.fromIPv4Address(IPv4.toIPv4Address(ec2_test_ip));
 	static byte[] lily_test_ip = {(byte)130,(byte)107,(byte)130,(byte)130};
 	int lily_test_ip_int = IPv4.toIPv4Address(lily_test_ip);
 	static byte[] orchid_test_ip = {(byte)130,(byte)107,(byte)130,(byte)131};
@@ -2419,7 +2420,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 		String hih_ip = "10.1.1.2";
 		String migration_engine_ip = "10.1.1.10";
 		logger.LogInfo("Received migration permission request message from LIH:"+lih_ip+": "+src_ip+":"+src_port+" => "+lih_ip+":"+dst_port);
-		if(src_ip.equals("129.105.44.99")){
+		if(src_ip.equals("129.105.44.99") || src_ip.endsWith(this.ec2_test_ip_str)){
 		}
 		else{
 			logger.LogInfo("Migration denied for client 129.105.44.60 (POLICY)");
