@@ -91,7 +91,11 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 	static short HIH_HARD_TIMEOUT = 300;
 	static short HIH_IDLE_TIMEOUT = 30;
 	static short DELTA = 50;
-	static long CONN_TIMEOUT = 300000;
+	
+	//For test..... REMOVE THIS IN FINAL VERSION!!!
+	static long CONN_TIMEOUT = 3;
+	//static long CONN_TIMEOUT = 300000;
+	
 	static short HIGH_PRIORITY = 20;
 	static short DEFAULT_PRIORITY = 5;
 	static short DROP_PRIORITY = 0;
@@ -295,7 +299,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 				sb.append(this.packetCounter+" ");
 				sb.append(this.effectivePacketCounter+" ");
 				sb.append(this.noProtocolCounter+" ");
-				sb.append(this.filterCounter+" remember_to_forward_traffic_to_ec2_and_nw");
+				sb.append(this.filterCounter+" remember_to_forward_traffic_to_ec2_and_nw and [For test] !!!!");
 				writer.println(sb.toString());
 				writer.flush();
 				System.err.println("Finished writing to file "+sb.toString());
@@ -780,14 +784,18 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 					if(pot.getMask().containsKey(dport))
 						logger.LogError(pot.getName()+" :"+pot.getMask().get(dport)+" "+pot.getMask().get(dport).inSubnet(dstIP));
 				}
-				return null;
+				//For test ....
+				return honeypots.get("honeyd");
+				//return null;
 			}
 			else{
 				logger.LogDebug("can't address port "+dport);
 				//for(short p : ports.keySet()){
 				//	System.err.println("debug: port:"+p);
 				//}
-				return null;
+				//For test ....
+				return honeypots.get("honeyd");
+				//return null;
 			}
 		
 		}
