@@ -294,6 +294,8 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 					sb.append(this.noProtocolCounter+" ");
 					sb.append(this.filterCounter+" remember_to_forward_traffic_to_ec2_and_nw");
 					writer.println(sb.toString());
+					writer.flush();
+					System.err.println("Finished writing to file "+sb.toString());
 					this.packetCounter = 0;
 					this.effectivePacketCounter = 0;
 					this.noProtocolCounter = 0;
