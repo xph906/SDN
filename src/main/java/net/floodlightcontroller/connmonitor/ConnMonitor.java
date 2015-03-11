@@ -262,53 +262,48 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 			}*/
 			
 			/* For statistics */
-			if((conn.getType()==Connection.INTERNAL_TO_EXTERNAL) && 
-				(conn.getProtocol()==0x06)){
-				long now = System.currentTimeMillis();
-				long five_min = 60000*10;
-				if(now - lastTime > five_min){		
-					Date date = new Date(now);
-					float rs = (float)(packetCounter-droppedCounter)/(float)(packetCounter);
-					logger.LogDebug("In five mins: pkt counter: "+packetCounter+" dropped counter:"+droppedCounter+" rs:"+rs+" time:"+date.toString());
-					OFMatch match = new OFMatch();
-					match.setWildcards(OFMatch.OFPFW_ALL); 
-					int mb = 1024*1024;
-					Runtime runtime = Runtime.getRuntime();
-					long free_memory = runtime.freeMemory()/mb;
-					long total_memory = runtime.totalMemory()/mb;
-								
-					logger.LogDebug("free memory: "+free_memory+" Total memory:"+total_memory);
-					logger.LogDebug("connection size: "+connMap.size()+" connToPot size:"+connToPot.size());
-					if (free_memory < 100){
-						forceClearMaps();
-						logger.LogDebug("Force clear maps!!!");
-					}
-					logger.LogDebug("");
-					packetCounter = 1;
-					droppedCounter = 1;
-					lastTime = now;
-					StringBuilder sb = new StringBuilder();
-					sb.append(now+" ");
-					sb.append(this.packetCounter+" ");
-					sb.append(this.effectivePacketCounter+" ");
-					sb.append(this.noProtocolCounter+" ");
-					sb.append(this.filterCounter+" remember_to_forward_traffic_to_ec2_and_nw");
-					writer.println(sb.toString());
-					writer.flush();
-					System.err.println("Finished writing to file "+sb.toString());
-					this.packetCounter = 0;
-					this.effectivePacketCounter = 0;
-					this.noProtocolCounter = 0;
-					this.filterCounter = 0;
-				}
-			}
+		
 			if(conn.srcIP==0 || conn.type==Connection.INVALID){
 				droppedCounter++;
 				return Command.CONTINUE;
 			}
-			int x = 2;
-			int y = 1;
-			y += 1;
+			long now = System.currentTimeMillis();
+			long ten_min = 60000*10;
+			if(now - lastTime > ten_min){		
+				Date date = new Date(now);
+				float rs = (float)(packetCounter-droppedCounter)/(float)(packetCounter);
+				logger.LogDebug("In ten mins: pkt counter: "+packetCounter+" dropped counter:"+droppedCounter+" rs:"+rs+" time:"+date.toString());
+				OFMatch match = new OFMatch();
+				match.setWildcards(OFMatch.OFPFW_ALL); 
+				int mb = 1024*1024;
+				Runtime runtime = Runtime.getRuntime();
+				long free_memory = runtime.freeMemory()/mb;
+				long total_memory = runtime.totalMemory()/mb;
+							
+				logger.LogDebug("free memory: "+free_memory+" Total memory:"+total_memory);
+				logger.LogDebug("connection size: "+connMap.size()+" connToPot size:"+connToPot.size());
+				if (free_memory < 100){
+					forceClearMaps();
+					logger.LogDebug("Force clear maps!!!");
+				}
+				logger.LogDebug("");
+				packetCounter = 1;
+				droppedCounter = 1;
+				lastTime = now;
+				StringBuilder sb = new StringBuilder();
+				sb.append(now+" ");
+				sb.append(this.packetCounter+" ");
+				sb.append(this.effectivePacketCounter+" ");
+				sb.append(this.noProtocolCounter+" ");
+				sb.append(this.filterCounter+" remember_to_forward_traffic_to_ec2_and_nw");
+				writer.println(sb.toString());
+				writer.flush();
+				System.err.println("Finished writing to file "+sb.toString());
+				this.packetCounter = 0;
+				this.effectivePacketCounter = 0;
+				this.noProtocolCounter = 0;
+				this.filterCounter = 0;
+			}
 			/*
 			if(processedByOtherHoneynets(conn, ((OFPacketIn)msg).getInPort(), sw,msg, eth) ){
 				return Command.CONTINUE;
