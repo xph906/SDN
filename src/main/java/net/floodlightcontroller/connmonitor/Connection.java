@@ -242,9 +242,26 @@ public class Connection {
 			dstIP_str = IPv4.fromIPv4Address(dstIP);
 			rs = dstIP_str +"_" + dstPort_str + "_"+srcIP_str+"_" + srcPort_str;
 		}
-		
 		return rs;
-		
+	}
+	
+
+	public String getStandardConnectionKey(){
+		String srcIPStr = IPv4.fromIPv4Address(srcIP);
+		String dstIPStr = IPv4.fromIPv4Address(dstIP);
+		int sp = (char)srcPort;
+		String srcPortStr = String.valueOf(sp);
+		int dp = (char)dstPort;
+		String dstPortStr = String.valueOf(dp);
+		String rs = "";
+		if(type == EXTERNAL_TO_INTERNAL){
+			rs = srcIPStr +"_" + srcPortStr + "_" +dstIPStr+"_"+dstPortStr;
+		}
+		else if(type == INTERNAL_TO_EXTERNAL){
+			
+			rs = dstIPStr +"_" + dstPortStr + "_"+srcIPStr+"_" + srcPortStr;
+		}
+		return rs;
 	}
 	
 	public short getType() {

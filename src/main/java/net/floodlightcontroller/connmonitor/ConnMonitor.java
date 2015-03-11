@@ -204,6 +204,8 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 	private long lastClearConnToPotTime;
 	private long lastTime;
 	
+	//For test
+	Set allConns;
 	private long packetCounter;
 	private long effectivePacketCounter;
 	private long noProtocolCounter;
@@ -271,6 +273,12 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 				droppedCounter++;
 				return Command.CONTINUE;
 			}
+			boolean newPacket = false;
+			if(!(allConns.contains(conn.getStandardConnectionKey())) ){
+				newPacket = true;
+				allConns.add(conn.getStandardConnectionKey());
+			}
+			
 			long now = System.currentTimeMillis();
 			long ten_min = 60000*10;
 			if(now - lastTime > ten_min){		
@@ -308,16 +316,22 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 				this.noProtocolCounter = 0;
 				this.filterCounter = 0;
 			}
+			
+			//For test
 			/*
 			if(processedByOtherHoneynets(conn, ((OFPacketIn)msg).getInPort(), sw,msg, eth) ){
 				return Command.CONTINUE;
 			}
 			*/
-			this.effectivePacketCounter++;
+			if(newPacket)
+				this.effectivePacketCounter++;
 			HoneyPot pot = getHoneypotFromConnection(conn);
 			if(pot == null){
-				droppedCounter++;
-				noProtocolCounter++;
+				if(newPacket){
+					droppedCounter++;
+					noProtocolCounter++;
+				}
+				
 				return Command.CONTINUE;
 			}
 			conn.setHoneyPot(pot);
@@ -344,7 +358,9 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 								logger.LogDebug("hit open IP: "+ IPv4.fromIPv4Address(conn.srcIP)+" "+IPv4.fromIPv4Address(conn.dstIP));
 							}
 							else{
-								filterCounter++;
+								if(newPacket){
+									filterCounter++;
+								}
 								return Command.CONTINUE;
 							}
 						}
@@ -785,8 +801,8 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 						logger.LogError(pot.getName()+" :"+pot.getMask().get(dport)+" "+pot.getMask().get(dport).inSubnet(dstIP));
 				}
 				//For test ....
-				return honeypots.get("honeyd");
-				//return null;
+				//return honeypots.get("honeyd");
+				return null;
 			}
 			else{
 				logger.LogDebug("can't address port "+dport);
@@ -794,8 +810,8 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 				//	System.err.println("debug: port:"+p);
 				//}
 				//For test ....
-				return honeypots.get("honeyd");
-				//return null;
+				//return honeypots.get("honeyd");
+				return null;
 			}
 		
 		}
@@ -2137,6 +2153,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 		this.effectivePacketCounter = 0;
 		this.noProtocolCounter = 0;
 		this.filterCounter = 0;
+		this.allConns = new HashSet();
 		
 	//	IPv4Netmask mask1 = new IPv4Netmask("130.107.128.0/17");
 	//	System.err.println(mask1);
