@@ -2125,7 +2125,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 		//honeypot_config_path
 		try {
 			writer = new PrintWriter("/home/xiang/SDN-honeynet/sosr_evaluation/floodlight_log","UTF-8");
-		} catch (FileNotFoundException | UnsupportedEncodingException e) {
+		} catch (Exception e) {
 			System.err.println("Error creating writter");
 			e.printStackTrace();
 		}
