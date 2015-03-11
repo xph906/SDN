@@ -1,8 +1,11 @@
 package net.floodlightcontroller.connmonitor;
 
 import java.io.BufferedReader;
+import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Array;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
@@ -198,8 +201,12 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 	private long lastTime;
 	
 	private long packetCounter;
+	private long effectivePacketCounter;
+	private long noProtocolCounter;
+	private long filterCounter;
 	private long droppedCounter;
 	private long droppedHIHCounter;
+	private PrintWriter writer;
 	
 	@Override
 	public String getName() {
@@ -280,6 +287,17 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 					packetCounter = 1;
 					droppedCounter = 1;
 					lastTime = now;
+					StringBuilder sb = new StringBuilder();
+					sb.append(now+" ");
+					sb.append(this.packetCounter+" ");
+					sb.append(this.effectivePacketCounter+" ");
+					sb.append(this.noProtocolCounter+" ");
+					sb.append(this.filterCounter+" remember_to_forward_traffic_to_ec2_and_nw");
+					writer.println(sb.toString());
+					this.packetCounter = 0;
+					this.effectivePacketCounter = 0;
+					this.noProtocolCounter = 0;
+					this.filterCounter = 0;
 				}
 			}
 			if(conn.srcIP==0 || conn.type==Connection.INVALID){
@@ -289,13 +307,16 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 			int x = 2;
 			int y = 1;
 			y += 1;
+			/*
 			if(processedByOtherHoneynets(conn, ((OFPacketIn)msg).getInPort(), sw,msg, eth) ){
 				return Command.CONTINUE;
 			}
-			
+			*/
+			this.effectivePacketCounter++;
 			HoneyPot pot = getHoneypotFromConnection(conn);
 			if(pot == null){
 				droppedCounter++;
+				noProtocolCounter++;
 				return Command.CONTINUE;
 			}
 			conn.setHoneyPot(pot);
@@ -322,6 +343,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 								logger.LogDebug("hit open IP: "+ IPv4.fromIPv4Address(conn.srcIP)+" "+IPv4.fromIPv4Address(conn.dstIP));
 							}
 							else{
+								filterCounter++;
 								return Command.CONTINUE;
 							}
 						}
@@ -2101,6 +2123,15 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 		droppedCounter = 0;
 		packetCounter = 1;
 		//honeypot_config_path
+		try {
+			writer = new PrintWriter("/home/xiang/SDN-honeynet/sosr_evaluation/floodlight_log","UTF-8");
+		} catch (FileNotFoundException | UnsupportedEncodingException e) {
+			System.err.println("Error creating writter");
+			e.printStackTrace();
+		}
+		this.effectivePacketCounter = 0;
+		this.noProtocolCounter = 0;
+		this.filterCounter = 0;
 		
 	//	IPv4Netmask mask1 = new IPv4Netmask("130.107.128.0/17");
 	//	System.err.println(mask1);
