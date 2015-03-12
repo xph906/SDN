@@ -589,7 +589,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 				return Command.CONTINUE;
 			}
 			//forwardPacket(sw,pktInMsg, dstMAC,dstIP,srcIP,outPort);
-			boolean result2 = forwardPacket(sw,pktInMsg, newDstMAC,newDstIP,srcIP,outPort);
+			boolean result2 = forwardPacket(sw,pktInMsg, newDstMAC,newDstIP,srcIP,(short)0,(short)0,outPort);
 			
 			if(!result1 || !result2){
 				logger.LogError("fail to install rule for "+conn);
@@ -977,7 +977,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 	
 	private boolean processedByOtherHoneynets(Connection conn, short inport,IOFSwitch sw, OFMessage msg,Ethernet eth ){
 		long switch_id = sw.getId();
-		
+		//OFPacketIn
 		/* NW */
 		for(Honeynet thirdPartyHoneynet : Honeynet.getAllHoneynets()){
 			//Honeynet thirdPartyHoneynet = Honeynet.getHoneynet("nw");
@@ -1076,7 +1076,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 				boolean rs = installPathForFlow(switch_id,inport,match,OFFlowMod.OFPFF_SEND_FLOW_REM,
 												item.getFlow_cookie(), newDstMAC,newDstIP,newSrcIP,
 												(short)0, new_dst_port,outPort,IDLE_TIMEOUT,HARD_TIMEOUT,HIGH_PRIORITY);
-				forwardPacket(sw,(OFPacketIn)msg, nc_mac_address,newDstIP,newSrcIP,outPort);
+				forwardPacket(sw,(OFPacketIn)msg, nc_mac_address,newDstIP,newSrcIP,(short)0, new_dst_port,outPort);
 				if (rs == false){
 					System.err.println("    Fail setting ruls for sending traffic to NW");
 				}
@@ -1203,6 +1203,9 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 				//System.err.println("    install rule for forwording packets to NW. Match:"+match);
 				boolean rs = installPathForFlow(switch_id,inport,match,OFFlowMod.OFPFF_SEND_FLOW_REM,
 								cookie, newDstMAC,newDstIP,newSrcIP,new_src_port, (short)0,outPort,IDLE_TIMEOUT,HARD_TIMEOUT,HIGH_PRIORITY);
+				
+				// forwardPacket(sw,pktInMsg, newDstMAC,newDstIP,srcIP,outPort);
+				this.forwardPacket(sw, (OFPacketIn)msg, newDstMAC, newDstIP, newSrcIP, (short)new_src_port,(short)0, outPort);
 				if(rs==false){
 					System.err.println("    error installing rule: Match"+match);
 				}
@@ -1452,7 +1455,7 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 	}
 	
 	public boolean forwardPacket(IOFSwitch sw, OFPacketIn pktInMsg, 
-			byte[] dstMAC, byte[] destIP, byte[] srcIP, short outSwPort) 
+			byte[] dstMAC, byte[] destIP, byte[] srcIP, short srcPort, short dstPort, short outSwPort) 
     {
         OFPacketOut pktOut = new OFPacketOut();        
         
@@ -1479,6 +1482,17 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 			actions.add(action_mod_src_ip);
 			actionLen += OFActionNetworkLayerSource.MINIMUM_LENGTH;
 		}
+		if(srcPort != 0){
+			OFActionTransportLayerSource action_mod_tp_src = new OFActionTransportLayerSource(srcPort);
+			actions.add(action_mod_tp_src);
+			actionLen += OFActionTransportLayerSource.MINIMUM_LENGTH;
+		}
+		if(dstPort != 0){
+			OFActionTransportLayerDestination action_mod_tp_dst = new OFActionTransportLayerDestination(dstPort);
+			actions.add(action_mod_tp_dst);
+			actionLen += OFActionTransportLayerDestination.MINIMUM_LENGTH;
+		}
+		
 		
 		OFActionOutput action_out_port;
 		actionLen += OFActionOutput.MINIMUM_LENGTH;
