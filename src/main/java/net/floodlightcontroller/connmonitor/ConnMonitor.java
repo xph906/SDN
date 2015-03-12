@@ -1166,12 +1166,19 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 				short front_src_ip = (short)( (src_ip>>>16) & 0x0000ffff);
 				short end_src_ip = (short)(src_ip & 0x0000ffff);
 				
+				//Remove this condition!!!!
+				if(!(thirdPartyHoneynet.getName().equals("ec2"))){
+					
 				forwardPacket2OtherNet(sw,(OFPacketIn)msg, nc_mac_address,remoteIPAddress,
 						IPv4.toIPv4AddressBytes(conn.getDstIP()),((OFPacketIn)msg).getInPort(), 
 						eth,(byte)0x01,front_src_ip,(new_src_port==conn.srcPort)?(short)0:new_src_port,(short)0);
 				forwardPacket2OtherNet(sw,(OFPacketIn)msg, nc_mac_address,remoteIPAddress,
 						IPv4.toIPv4AddressBytes(conn.getDstIP()),((OFPacketIn)msg).getInPort(), 
 						eth,(byte)0x02, end_src_ip,(new_src_port==conn.srcPort)?(short)0:new_src_port,(short)0);
+				}
+				else{
+					System.err.println("EC2 don't send setup packet");
+				}
 				//test
 				
 				/* Attacker->nw rule */
