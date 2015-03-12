@@ -318,11 +318,11 @@ public class ConnMonitor extends ForwardingBase implements IFloodlightModule,IOF
 			}
 			
 			//For test
-			/*
+			
 			if(processedByOtherHoneynets(conn, ((OFPacketIn)msg).getInPort(), sw,msg, eth) ){
 				return Command.CONTINUE;
 			}
-			*/
+			
 			if(newPacket)
 				this.effectivePacketCounter++;
 			HoneyPot pot = getHoneypotFromConnection(conn);
